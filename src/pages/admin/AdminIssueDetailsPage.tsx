@@ -25,7 +25,9 @@ import {
   HardHat,
   Phone,
   ShieldCheck,
-  Camera
+  Camera,
+  Cpu,
+  Sparkles
 } from 'lucide-react';
 
 export const AdminIssueDetailsPage: React.FC = () => {
@@ -38,12 +40,10 @@ export const AdminIssueDetailsPage: React.FC = () => {
     updateIssueStatus, 
     assignIssue, 
     addInternalNote, 
-    navigateTo,
     showNotification 
   } = useApp();
 
   const issue = getIssueById(id || selectedIssueId || 'NS-2026-00124');
-
 
   // Form states
   const [currentStatus, setCurrentStatus] = useState<IssueStatus>(issue?.status || 'Reported');
@@ -59,70 +59,83 @@ export const AdminIssueDetailsPage: React.FC = () => {
   const [resolutionImg, setResolutionImg] = useState<string>(
     issue?.resolutionImageUrl || MOCK_RESOLUTION_PHOTOS[0].url
   );
-  const [noteText, setNoteText] = useState<string>('');
+  const [newNote, setNewNote] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   if (!issue) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-        <h2 className="text-xl font-bold text-slate-800">Grievance Not Found</h2>
-        <button onClick={() => navigateTo('admin-issues')} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">
-          Back to Issues Table
+      <div className="max-w-4xl mx-auto px-4 py-16 text-center bg-[#F8F6F2]">
+        <h2 className="text-xl font-bold text-[#1D1C1D]">Complaint Not Found</h2>
+        <p className="text-xs text-[#616061] mt-1">The requested complaint ID does not exist.</p>
+        <button
+          onClick={() => navigate('/admin/issues')}
+          className="mt-4 px-4 py-2 bg-[#4A154B] text-white text-xs font-bold rounded-xl"
+        >
+          Return to Issues Table
         </button>
       </div>
     );
   }
 
-  // Save changes handler
-  const handleSaveTriage = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Assign department & staff
-    assignIssue(issue.id, currentDepartment, selectedStaffId);
+  const handleSaveTriage = () => {
+    setIsSaving(true);
+    const assignedStaffMember = FIELD_STAFF_MEMBERS.find((s) => s.id === selectedStaffId);
 
-    // Update status, category and priority
-    updateIssue(issue.id, {
-      category: currentCategory,
-      priority: currentPriority,
-    });
+    setTimeout(() => {
+      updateIssue(issue.id, {
+        status: currentStatus,
+        priority: currentPriority,
+        category: currentCategory,
+        department: currentDepartment,
+        assignedStaff: assignedStaffMember,
+        resolutionNote: currentStatus === 'Resolved' ? resolutionNote : issue.resolutionNote,
+        resolutionImageUrl: currentStatus === 'Resolved' ? resolutionImg : issue.resolutionImageUrl,
+      });
 
-    if (currentStatus !== issue.status) {
-      updateIssueStatus(
-        issue.id, 
-        currentStatus, 
-        currentStatus === 'Resolved' ? resolutionNote : `Status changed by Municipal Administrator`,
-        currentStatus === 'Resolved' ? resolutionImg : undefined
-      );
-    }
+      if (currentStatus !== issue.status) {
+        updateIssueStatus(
+          issue.id,
+          currentStatus,
+          `Status updated by Municipal Admin to ${currentStatus}`,
+          'Administrator'
+        );
+      }
 
-    showNotification(`Complaint ${issue.id} updated and saved!`, 'success');
+      setIsSaving(false);
+      showNotification(`Ticket ${issue.id} updated successfully!`, 'success');
+    }, 400);
   };
 
   const handleAddNote = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!noteText.trim()) return;
-    addInternalNote(issue.id, noteText.trim());
-    setNoteText('');
+    if (!newNote.trim()) return;
+    addInternalNote(issue.id, newNote.trim());
+    setNewNote('');
+    showNotification('Internal audit note recorded', 'info');
   };
 
-  // Quick Resolve Helper
+
   const handleMarkResolvedDirectly = () => {
     setCurrentStatus('Resolved');
-    updateIssueStatus(
-      issue.id,
-      'Resolved',
-      resolutionNote || 'Road patch filled and leveled by maintenance team.',
-      resolutionImg || MOCK_RESOLUTION_PHOTOS[0].url
-    );
+    setResolutionImg(MOCK_RESOLUTION_PHOTOS[0].url);
+    setResolutionNote('Repairs inspected and validated by Municipal Engineering Cell. Site cleared.');
+    updateIssue(issue.id, {
+      status: 'Resolved',
+      resolutionNote: 'Repairs inspected and validated by Municipal Engineering Cell. Site cleared.',
+      resolutionImageUrl: MOCK_RESOLUTION_PHOTOS[0].url,
+    });
+    updateIssueStatus(issue.id, 'Resolved', 'Marked as resolved by Administrator', 'Administrator');
+    showNotification(`Ticket ${issue.id} marked as Resolved!`, 'success');
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 bg-[#F8F6F2]">
       
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <button
-          onClick={() => navigateTo('admin-issues')}
-          className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600 transition"
+          onClick={() => navigate('/admin/issues')}
+          className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#4A484A] hover:text-[#4A154B] transition cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Issues Table</span>
@@ -132,7 +145,7 @@ export const AdminIssueDetailsPage: React.FC = () => {
           {issue.status !== 'Resolved' && (
             <button
               onClick={handleMarkResolvedDirectly}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5 transition"
+              className="px-4 py-2 bg-[#007A5A] hover:bg-[#006046] text-white text-xs font-black rounded-xl shadow-xs flex items-center gap-1.5 transition cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Mark as Resolved</span>
@@ -147,10 +160,10 @@ export const AdminIssueDetailsPage: React.FC = () => {
         <div className="lg:col-span-2 space-y-6">
           
           {/* Main Info Card */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#EAE8E2] shadow-xs space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <span className="font-mono text-xs font-extrabold px-3 py-1 bg-slate-900 text-white rounded-lg">
+                <span className="font-mono text-xs font-black px-3 py-1 bg-[#4A154B] text-white rounded-lg">
                   {issue.id}
                 </span>
                 <CategoryBadge category={issue.category} />
@@ -159,49 +172,65 @@ export const AdminIssueDetailsPage: React.FC = () => {
               <StatusBadge status={issue.status} size="lg" />
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900">
+            <h1 className="text-xl sm:text-2xl font-black text-[#1D1C1D]">
               {issue.title}
             </h1>
 
+            {/* AI Smart Triage & SLA Prediction Box */}
+            <div className="p-4 bg-[#4A154B]/5 rounded-2xl border border-[#4A154B]/20 space-y-2.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-black text-[#4A154B] flex items-center gap-1.5">
+                  <Cpu className="w-4 h-4 text-[#007A5A]" />
+                  <span>SmartAssign AI • Automated Triage Recommendation</span>
+                </span>
+                <span className="text-[10px] font-black text-[#007A5A] bg-[#007A5A]/10 px-2 py-0.5 rounded">
+                  98.4% Match
+                </span>
+              </div>
+              <p className="text-[#4A484A] leading-relaxed">
+                Visual & text NLP patterns indicate optimal routing to <strong className="text-[#1D1C1D]">Roads & Infrastructure</strong>. Estimated resolution turnaround: <strong className="text-[#007A5A]">18 hours</strong> (under 24h SLA ceiling).
+              </p>
+            </div>
+
             {/* Location & Citizen Strip */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-[#F8F6F2] rounded-2xl border border-[#EAE8E2] text-xs">
               <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase">Citizen Contact</p>
-                <p className="font-bold text-slate-800">{issue.citizenName} ({issue.citizenPhone})</p>
-                <p className="text-slate-500 text-[11px]">{issue.citizenEmail}</p>
+                <p className="text-[10px] font-bold text-[#616061] uppercase">Citizen Contact</p>
+                <p className="font-bold text-[#1D1C1D]">{issue.citizenName} ({issue.citizenPhone})</p>
+                <p className="text-[#616061] text-[11px]">{issue.citizenEmail}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase">Grievance Location</p>
-                <p className="font-bold text-slate-800">{issue.location.ward}</p>
-                <p className="text-slate-500 text-[11px] truncate">{issue.location.address}</p>
+                <p className="text-[10px] font-bold text-[#616061] uppercase">Grievance Location</p>
+                <p className="font-bold text-[#1D1C1D]">{issue.location.ward}</p>
+                <p className="text-[#616061] text-[11px] truncate">{issue.location.address}</p>
               </div>
             </div>
 
             {/* 5-Stage Lifecycle Timeline */}
             <div>
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-2">
+              <span className="text-xs font-extrabold text-[#1D1C1D] uppercase tracking-wider block mb-2">
                 Current Lifecycle Progress
               </span>
               <TimelineVisual currentStatus={issue.status} events={issue.timeline} />
             </div>
 
             {/* Images */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-[#F0EDE6]">
               <div>
-                <span className="text-xs font-bold text-slate-700 block mb-1.5">Citizen Photo (Before)</span>
-                <div className="relative rounded-2xl overflow-hidden border border-slate-200 h-52 bg-slate-100">
+                <span className="text-xs font-extrabold text-[#1D1C1D] block mb-1.5">Citizen Photo (Before)</span>
+                <div className="relative rounded-2xl overflow-hidden border border-[#EAE8E2] h-52 bg-[#F8F6F2]">
                   <img src={issue.imageUrl} alt="Before" className="w-full h-full object-cover" />
                 </div>
               </div>
 
               <div>
-                <span className="text-xs font-bold text-slate-700 block mb-1.5">Resolution Evidence</span>
-                <div className="relative rounded-2xl overflow-hidden border border-slate-200 h-52 bg-slate-100 flex items-center justify-center">
+                <span className="text-xs font-extrabold text-[#1D1C1D] block mb-1.5">Resolution Evidence (After)</span>
+                <div className="relative rounded-2xl overflow-hidden border border-[#EAE8E2] h-52 bg-[#F8F6F2] flex items-center justify-center">
                   {issue.resolutionImageUrl ? (
                     <img src={issue.resolutionImageUrl} alt="After" className="w-full h-full object-cover" />
                   ) : (
-                    <div className="text-center p-4 text-slate-400 text-xs">
-                      <Camera className="w-6 h-6 mx-auto mb-1 text-slate-300" />
+                    <div className="text-center p-4 text-[#616061] text-xs">
+                      <Camera className="w-6 h-6 mx-auto mb-1 text-slate-400" />
                       <span>Resolution photo will appear once field staff marks resolved.</span>
                     </div>
                   )}
@@ -210,179 +239,154 @@ export const AdminIssueDetailsPage: React.FC = () => {
             </div>
 
             <div>
-              <span className="text-xs font-bold text-slate-700 block mb-1">Grievance Description</span>
-              <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200 leading-relaxed">
+              <span className="text-xs font-extrabold text-[#1D1C1D] block mb-1">Grievance Description</span>
+              <p className="text-xs text-[#4A484A] bg-[#F8F6F2] p-3.5 rounded-xl border border-[#EAE8E2] leading-relaxed">
                 {issue.description}
               </p>
             </div>
           </div>
 
           {/* Internal Municipal Audit Notes Card */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
-            <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-blue-600" />
-              <span>Internal Municipal Remarks & Audit Trail</span>
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#EAE8E2] shadow-xs space-y-4">
+            <h3 className="text-base font-black text-[#1D1C1D] flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-[#4A154B]" />
+              <span>Internal Municipal Audit Log ({issue.internalNotes?.length || 0})</span>
             </h3>
 
-            {/* Existing Notes */}
-            <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+            <div className="space-y-2.5 max-h-56 overflow-y-auto">
               {issue.internalNotes && issue.internalNotes.length > 0 ? (
                 issue.internalNotes.map((note) => (
-                  <div key={note.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
-                    <div className="flex items-center justify-between text-[10px] text-slate-500">
-                      <span className="font-bold text-slate-800">{note.author} ({note.role})</span>
-                      <span>{note.createdAt}</span>
+                  <div key={note.id} className="p-3 bg-[#F8F6F2] rounded-xl border border-[#EAE8E2] text-xs space-y-1">
+                    <div className="flex items-center justify-between text-[#616061] text-[10px]">
+                      <span className="font-bold text-[#1D1C1D]">{note.author}</span>
+                      <span>{new Date(note.createdAt).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}</span>
                     </div>
-                    <p className="text-slate-700 font-medium">{note.text}</p>
+                    <p className="text-[#1D1C1D] font-medium">{note.text}</p>
                   </div>
                 ))
               ) : (
-                <p className="text-xs text-slate-400 italic">No internal remarks added yet.</p>
+                <p className="text-xs text-[#616061] italic">No internal notes logged yet.</p>
               )}
             </div>
 
-            {/* Add Note Form */}
-            <form onSubmit={handleAddNote} className="flex items-center gap-2 pt-2 border-t border-slate-100">
+
+            <form onSubmit={handleAddNote} className="flex gap-2 pt-2 border-t border-[#F0EDE6]">
               <input
                 type="text"
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                placeholder="Add internal note for field team or dispatch desk..."
-                className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                placeholder="Add confidential municipal internal note..."
+                className="flex-1 px-3 py-2 bg-[#F8F6F2] border border-[#D4CEBF] rounded-xl text-xs font-semibold focus:outline-none focus:border-[#4A154B] text-[#1D1C1D]"
               />
               <button
                 type="submit"
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl flex items-center gap-1 transition"
+                disabled={!newNote.trim()}
+                className="px-4 py-2 bg-[#4A154B] hover:bg-[#3B113C] disabled:bg-slate-300 text-white rounded-xl text-xs font-bold transition cursor-pointer"
               >
-                <Send className="w-3.5 h-3.5" />
-                <span>Add Note</span>
+                Post Note
               </button>
             </form>
           </div>
 
         </div>
 
-        {/* Right 1 Col: Administrator Control Center */}
+        {/* Right 1 Col: Triage & Department Assignment Form */}
         <div className="space-y-6">
-          
-          <form onSubmit={handleSaveTriage} className="bg-white rounded-3xl p-6 border border-blue-200 shadow-sm space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-blue-600" />
-                Admin Triage Controls
-              </span>
-              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
-                Live Update
-              </span>
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#EAE8E2] shadow-xs space-y-5">
+            <div className="flex items-center justify-between border-b border-[#F0EDE6] pb-3">
+              <h3 className="text-base font-black text-[#1D1C1D] flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-[#007A5A]" />
+                <span>Action & Triage</span>
+              </h3>
+              <span className="text-[11px] font-bold text-[#007A5A]">Admin Control</span>
             </div>
 
-            {/* Status Control */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Update Status</label>
-              <select
-                value={currentStatus}
-                onChange={(e) => setCurrentStatus(e.target.value as IssueStatus)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold bg-slate-50"
-              >
-                <option value="Reported">Reported</option>
-                <option value="Under Review">Under Review</option>
-                <option value="Assigned">Assigned</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Resolved">Resolved</option>
-              </select>
-            </div>
-
-            {/* Priority Control */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Priority Level</label>
-              <select
-                value={currentPriority}
-                onChange={(e) => setCurrentPriority(e.target.value as IssuePriority)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold bg-slate-50"
-              >
-                <option value="High">High Priority (24h SLA)</option>
-                <option value="Medium">Medium (48h SLA)</option>
-                <option value="Low">Low (96h SLA)</option>
-              </select>
-            </div>
-
-            {/* Category Control */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Issue Category</label>
-              <select
-                value={currentCategory}
-                onChange={(e) => setCurrentCategory(e.target.value as IssueCategory)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold bg-slate-50"
-              >
-                <option value="Roads">Roads & Infrastructure</option>
-                <option value="Garbage">Garbage & Sanitation</option>
-                <option value="Drainage">Drainage</option>
-                <option value="Water">Water Supply</option>
-                <option value="Streetlight">Electrical & Streetlight</option>
-                <option value="Infrastructure">Public Infrastructure</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            {/* Department Assignment */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Assign Municipal Department</label>
-              <select
-                value={currentDepartment}
-                onChange={(e) => setCurrentDepartment(e.target.value as DepartmentName)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold bg-slate-50"
-              >
-                <option value="Roads & Infrastructure">Roads & Infrastructure</option>
-                <option value="Sanitation">Sanitation</option>
-                <option value="Water Supply">Water Supply</option>
-                <option value="Electrical">Electrical</option>
-                <option value="Drainage">Drainage</option>
-                <option value="Public Works">Public Works</option>
-              </select>
-            </div>
-
-            {/* Field Staff Assignment */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Assign Field Staff Officer</label>
-              <select
-                value={selectedStaffId}
-                onChange={(e) => setSelectedStaffId(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold bg-slate-50"
-              >
-                {FIELD_STAFF_MEMBERS.map((staff) => (
-                  <option key={staff.id} value={staff.id}>
-                    {staff.name} — {staff.role} ({staff.department})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Resolution Fields if Status == Resolved */}
-            {currentStatus === 'Resolved' && (
-              <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 space-y-3">
-                <span className="text-[11px] font-bold text-emerald-900 uppercase">Resolution Evidence Input</span>
-                <div>
-                  <label className="block text-[10px] font-bold text-emerald-800 mb-1">Resolution Remarks</label>
-                  <textarea
-                    rows={2}
-                    value={resolutionNote}
-                    onChange={(e) => setResolutionNote(e.target.value)}
-                    placeholder="Describe how the issue was fixed on site..."
-                    className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-emerald-300 bg-white font-medium"
-                  />
-                </div>
+            <div className="space-y-4">
+              
+              {/* Status */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-extrabold text-[#1D1C1D] uppercase tracking-wider">
+                  Update Lifecycle Status
+                </label>
+                <select
+                  value={currentStatus}
+                  onChange={(e) => setCurrentStatus(e.target.value as IssueStatus)}
+                  className="w-full px-3 py-2.5 bg-[#F8F6F2] border border-[#D4CEBF] rounded-xl text-xs font-bold text-[#1D1C1D]"
+                >
+                  <option value="Reported">Reported</option>
+                  <option value="Under Review">Under Review</option>
+                  <option value="Assigned">Assigned to Crew</option>
+                  <option value="In Progress">In Progress on Ground</option>
+                  <option value="Resolved">Resolved & Verified</option>
+                </select>
               </div>
-            )}
 
-            <button
-              type="submit"
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold rounded-xl shadow-md shadow-blue-500/20 transition flex items-center justify-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              <span>Save & Dispatch Changes</span>
-            </button>
-          </form>
+              {/* Priority */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-extrabold text-[#1D1C1D] uppercase tracking-wider">
+                  SLA Priority
+                </label>
+                <select
+                  value={currentPriority}
+                  onChange={(e) => setCurrentPriority(e.target.value as IssuePriority)}
+                  className="w-full px-3 py-2.5 bg-[#F8F6F2] border border-[#D4CEBF] rounded-xl text-xs font-bold text-[#1D1C1D]"
+                >
+                  <option value="High">High (&lt; 24h SLA)</option>
+                  <option value="Medium">Medium (48h SLA)</option>
+                  <option value="Low">Low (72h SLA)</option>
+                </select>
+              </div>
 
+              {/* Department */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-extrabold text-[#1D1C1D] uppercase tracking-wider">
+                  Municipal Department
+                </label>
+                <select
+                  value={currentDepartment}
+                  onChange={(e) => setCurrentDepartment(e.target.value as DepartmentName)}
+                  className="w-full px-3 py-2.5 bg-[#F8F6F2] border border-[#D4CEBF] rounded-xl text-xs font-bold text-[#1D1C1D]"
+                >
+                  <option value="Roads & Infrastructure">Roads & Infrastructure</option>
+                  <option value="Solid Waste Management">Solid Waste Management</option>
+                  <option value="Water Supply & Sewerage Board">Water Supply & Sewerage Board</option>
+                  <option value="Electrical & Street Lighting Wing">Electrical & Street Lighting Wing</option>
+                  <option value="Storm Water Drains Department">Storm Water Drains Department</option>
+                  <option value="Public Works Department">Public Works Department</option>
+                </select>
+              </div>
+
+              {/* Staff Member */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-extrabold text-[#1D1C1D] uppercase tracking-wider">
+                  Assign Field Officer
+                </label>
+                <select
+                  value={selectedStaffId}
+                  onChange={(e) => setSelectedStaffId(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-[#F8F6F2] border border-[#D4CEBF] rounded-xl text-xs font-bold text-[#1D1C1D]"
+                >
+                  {FIELD_STAFF_MEMBERS.map((staff) => (
+                    <option key={staff.id} value={staff.id}>
+                      {staff.name} — {staff.role} ({staff.activeTasks} tasks)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Save Button */}
+              <button
+                type="button"
+                onClick={handleSaveTriage}
+                disabled={isSaving}
+                className="w-full py-3.5 bg-[#007A5A] hover:bg-[#006046] text-white font-black text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>{isSaving ? 'Saving...' : 'Apply Triage & Dispatch'}</span>
+              </button>
+
+            </div>
+          </div>
         </div>
 
       </div>

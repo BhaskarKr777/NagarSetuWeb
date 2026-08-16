@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:backend": "npm --prefix backend run dev",
+    "dev:ml": "python -m uvicorn ml_service.main:app --reload --port 8000",
     "build": "tsc -b && vite build",
     "build:backend": "npm --prefix backend run build",
     "start:backend": "npm --prefix backend start",

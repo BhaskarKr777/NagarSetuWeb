@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { IssueCategory, IssuePriority } from '../../types';
 import { MOCK_SAMPLE_PHOTOS } from '../../data/mockData';
 import { InteractiveMap } from '../../components/common/InteractiveMap';
+import { analyzeCivicImage, checkDuplicateGrievance, AIImageAnalysisResult, DuplicateCheckResult } from '../../services/aiService';
 import confetti from 'canvas-confetti';
 import { 
   Camera, 
@@ -18,17 +19,20 @@ import {
   FileText, 
   Navigation,
   RefreshCw,
-  Info
+  Info,
+  Layers,
+  Cpu,
+  ThumbsUp,
+  ExternalLink
 } from 'lucide-react';
 
 export const ReportIssuePage: React.FC = () => {
   const navigate = useNavigate();
-  const { createIssue, currentUser } = useApp();
-
+  const { createIssue, currentUser, issues, upvoteIssue, showNotification } = useApp();
 
   // Form State
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState('Hazardous Deep Pothole on Main Road');
+  const [description, setDescription] = useState('Large crater causing severe traffic slowdown and hazard for two-wheelers.');
   const [category, setCategory] = useState<IssueCategory>('Roads');
   const [priority, setPriority] = useState<IssuePriority>('High');
   const [address, setAddress] = useState('100 Feet Road, Near Metro Pillar 142, Indiranagar');
@@ -40,58 +44,79 @@ export const ReportIssuePage: React.FC = () => {
   const [isLocating, setIsLocating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // AI State
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<AIImageAnalysisResult | null>(null);
+  const [duplicateCheck, setDuplicateCheck] = useState<DuplicateCheckResult | null>(null);
+
   // Success State
   const [submittedIssueId, setSubmittedIssueId] = useState<string | null>(null);
 
-  // Quick Preset Autofil
+  // Trigger AI Image Analysis when image changes
+  useEffect(() => {
+    if (!imageUrl) return;
+    setIsAnalyzingImage(true);
+    analyzeCivicImage(imageUrl, category).then((result) => {
+      setAiAnalysis(result);
+      setIsAnalyzingImage(false);
+    });
+  }, [imageUrl, category]);
+
+  // Trigger Duplicate Check when title/location changes
+  useEffect(() => {
+    if (!title || !lat || !lng) return;
+    const dup = checkDuplicateGrievance(title, category, lat, lng, issues);
+    setDuplicateCheck(dup);
+  }, [title, category, lat, lng, issues]);
+
+  // Quick Preset Autofill
   const applyPreset = (preset: typeof MOCK_SAMPLE_PHOTOS[0]) => {
     setImageUrl(preset.url);
     if (preset.label.includes('Pothole')) {
-      setTitle('Hazardous Deep Pothole on Main Road');
-      setDescription('Large crater causing severe traffic slowdown and hazard for two-wheelers.');
       setCategory('Roads');
-      setPriority('High');
     } else if (preset.label.includes('Garbage')) {
-      setTitle('Overflowing Garbage Dumpster on Footpath');
-      setDescription('Trash has not been cleared for 3 days and is spilling onto the pedestrian path.');
       setCategory('Garbage');
-      setPriority('High');
     } else if (preset.label.includes('Water')) {
-      setTitle('Underground Water Pipe Burst');
-      setDescription('Massive drinking water leakage gushing onto the road and flooding basements.');
       setCategory('Water');
-      setPriority('High');
     } else if (preset.label.includes('Streetlight')) {
-      setTitle('Non-Functional Streetlights on Residential Stretch');
-      setDescription('Street is pitch dark after 7 PM causing safety concerns for pedestrians.');
       setCategory('Streetlight');
-      setPriority('Medium');
-    } else if (preset.label.includes('Drain')) {
-      setTitle('Blocked Stormwater Drain Causing Waterlogging');
-      setDescription('Inlet blocked by silt and plastic waste. Water accumulating rapidly.');
+    } else if (preset.label.includes('Drainage')) {
       setCategory('Drainage');
-      setPriority('High');
     }
   };
 
-  // Browser Geolocation
-  const handleFetchLocation = () => {
+  const handleApplyAiDraft = () => {
+    if (!aiAnalysis) return;
+    setTitle(aiAnalysis.suggestedTitle);
+    setDescription(aiAnalysis.suggestedDescription);
+    setCategory(aiAnalysis.detectedCategory);
+    setPriority(aiAnalysis.suggestedPriority);
+    showNotification('AI Draft Applied: Title, Description, & Category updated!', 'success');
+  };
+
+  // Get current device GPS
+  const handleGetLocation = () => {
+    setIsLocating(true);
     if (!navigator.geolocation) {
       alert('Geolocation is not supported by your browser.');
+      setIsLocating(false);
       return;
     }
-    setIsLocating(true);
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLat(pos.coords.latitude);
-        setLng(pos.coords.longitude);
-        setAddress(`GPS Location (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`);
+        const latitude = pos.coords.latitude;
+        const longitude = pos.coords.longitude;
+        setLat(latitude);
+        setLng(longitude);
+        setAddress(`GPS: ${latitude.toFixed(4)}° N, ${longitude.toFixed(4)}° E (Auto-detected)`);
+        setWard('Ward 14 - Indiranagar Central');
         setIsLocating(false);
+        showNotification('GPS Coordinates locked successfully', 'info');
       },
       (err) => {
-        console.warn('Geolocation error', err);
+        console.warn('GPS Error:', err);
         setIsLocating(false);
-        // Fallback default coordinates
         setLat(12.9716);
         setLng(77.5946);
         setAddress('Indiranagar 100 Feet Road, Bengaluru');
@@ -100,7 +125,6 @@ export const ReportIssuePage: React.FC = () => {
     );
   };
 
-  // Handle image file upload (converts to base64 preview)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -134,7 +158,6 @@ export const ReportIssuePage: React.FC = () => {
         imageUrl: imageUrl || MOCK_SAMPLE_PHOTOS[0].url
       });
 
-      // Confetti burst for rewarding citizen engagement!
       try {
         confetti({
           particleCount: 80,
@@ -147,59 +170,60 @@ export const ReportIssuePage: React.FC = () => {
 
       setSubmittedIssueId(newIssue.id);
       setIsSubmitting(false);
-    }, 600);
+    }, 500);
   };
 
   // Success Screen
   if (submittedIssueId) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-slate-200 shadow-xl space-y-6">
+      <div className="max-w-2xl mx-auto px-4 py-16 text-center bg-[#F8F6F2]">
+        <div className="bg-white rounded-3xl p-8 sm:p-12 border border-[#EAE8E2] shadow-xl space-y-6">
           
-          <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-md shadow-emerald-500/20 animate-bounce-short">
+          <div className="w-20 h-20 bg-[#007A5A]/10 text-[#007A5A] rounded-full flex items-center justify-center mx-auto shadow-sm">
             <CheckCircle2 className="w-10 h-10" />
           </div>
 
           <div className="space-y-2">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+            <span className="text-xs font-extrabold uppercase tracking-wider text-[#007A5A] bg-[#007A5A]/10 px-3 py-1 rounded-full">
               Grievance Registered
             </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
+            <h1 className="text-2xl sm:text-3xl font-black text-[#1D1C1D]">
               Your civic issue has been reported successfully!
             </h1>
-            <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto">
-              Our municipal control desk has acknowledged your complaint and automatically routed it to the concerned ward department.
+            <p className="text-xs sm:text-sm text-[#616061] max-w-md mx-auto">
+              Our central municipal control desk has acknowledged your complaint and routed it to the concerned ward department.
             </p>
           </div>
 
           {/* Generated ID Badge */}
-          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 max-w-sm mx-auto">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Complaint Reference ID</p>
-            <p className="text-2xl font-extrabold font-mono text-blue-700 tracking-wider my-1">{submittedIssueId}</p>
-            <p className="text-[11px] text-slate-500">Save this ID or track directly in your dashboard.</p>
+          <div className="p-4 bg-[#F8F6F2] rounded-2xl border border-[#EAE8E2] max-w-sm mx-auto">
+            <p className="text-[11px] font-bold text-[#616061] uppercase tracking-wider">Complaint Reference ID</p>
+            <p className="text-2xl font-black font-mono text-[#4A154B] tracking-wider my-1">{submittedIssueId}</p>
+            <p className="text-[11px] text-[#616061]">Save this ID or track status in your dashboard.</p>
           </div>
 
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
+              type="button"
               onClick={() => navigate(`/citizen/report/${submittedIssueId}`)}
-              className="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-6 py-3.5 bg-[#007A5A] hover:bg-[#006046] text-white text-xs sm:text-sm font-black rounded-xl shadow-xs transition flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>View Report Details & Timeline</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
             <button
+              type="button"
               onClick={() => navigate('/citizen/my-reports')}
-              className="w-full sm:w-auto px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition"
+              className="w-full sm:w-auto px-6 py-3.5 bg-white hover:bg-[#EAE8E2] text-[#1D1C1D] text-xs sm:text-sm font-black rounded-xl border border-[#D4CEBF] transition cursor-pointer"
             >
               Go to My Reports
             </button>
           </div>
 
-
-          <p className="text-[11px] text-slate-400">
-            You will receive instant SMS & WhatsApp updates as the field officer progresses with resolution.
+          <p className="text-[11px] text-[#616061]">
+            Instant SMS & WhatsApp tracking updates are automatically triggered as the field officer progresses.
           </p>
 
         </div>
@@ -208,275 +232,365 @@ export const ReportIssuePage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 bg-[#F8F6F2]">
       
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 mb-1">
-          <Sparkles className="w-4 h-4" />
-          <span>New Civic Complaint</span>
+      <div className="space-y-2">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#007A5A]/10 text-[#007A5A] text-xs font-bold">
+          <Sparkles className="w-3.5 h-3.5 text-[#E01E5A]" />
+          <span>CivicSight AI • Computer Vision Assisted Reporting</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
-          Report a Civic Issue
+        <h1 className="text-3xl sm:text-4xl font-black text-[#1D1C1D] tracking-tight">
+          Report a Civic Problem
         </h1>
-        <p className="text-xs sm:text-sm text-slate-600">
-          Provide issue details, location and photographic evidence for quick municipal resolution.
+        <p className="text-xs sm:text-sm text-[#616061] font-medium">
+          Upload photo proof, let our AI model detect severity & category, and submit directly to the municipal field roster.
         </p>
       </div>
 
-      {/* Quick Demo Sample Presets */}
-      <div className="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-4">
-        <div className="flex items-center justify-between mb-2.5">
-          <span className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-            Quick Demo Autofill Presets (Click to test instantly):
-          </span>
-          <span className="text-[10px] text-blue-600 font-medium">1-Click Test</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {MOCK_SAMPLE_PHOTOS.map((preset) => (
-            <button
-              key={preset.label}
-              type="button"
-              onClick={() => applyPreset(preset)}
-              className="px-2.5 py-1 bg-white hover:bg-blue-100 text-slate-700 hover:text-blue-800 rounded-lg text-xs font-semibold border border-blue-200 shadow-2xs transition"
-            >
-              📷 {preset.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
 
-      {/* Main Reporting Form */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6">
-        
-        {/* 1. Image Upload & Preview Section */}
-        <div>
-          <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
-            1. Photo Evidence <span className="text-red-500">*</span>
-          </label>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-            {/* Upload Zone */}
-            <div className="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl p-6 text-center bg-slate-50/60 hover:bg-blue-50/30 transition flex flex-col items-center justify-center cursor-pointer relative">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-              />
-              <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mb-3">
-                <Camera className="w-6 h-6" />
-              </div>
-              <p className="text-xs font-bold text-slate-800">
-                Click or Drag & Drop Image Here
-              </p>
-              <p className="text-[11px] text-slate-500 mt-1">
-                Supports JPG, PNG, WEBP (Max 10MB)
-              </p>
-              <span className="mt-3 px-3 py-1 bg-white text-blue-600 rounded-lg border border-slate-200 text-xs font-semibold shadow-2xs">
-                Browse Files
-              </span>
-            </div>
-
-            {/* Preview Box */}
-            <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100 h-48 flex items-center justify-center group">
-              {imageUrl ? (
-                <>
-                  <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold">
-                    ✓ Photo Ready for Evidence
-                  </div>
-                  <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-slate-900/80 text-white text-[10px] font-semibold backdrop-blur-xs">
-                    Uploaded Preview
-                  </span>
-                </>
-              ) : (
-                <span className="text-xs text-slate-400">No image uploaded</span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* 2. Issue Title & Category */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">
-              2. Issue Title <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Deep hazardous pothole near 100ft road cross"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">
-              Category <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value as IssueCategory)}
-              className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-semibold bg-white"
-            >
-              <option value="Roads">🚗 Roads & Potholes</option>
-              <option value="Garbage">🗑️ Garbage & Sanitation</option>
-              <option value="Drainage">🌊 Drainage & Waterlogging</option>
-              <option value="Water">💧 Drinking Water Supply</option>
-              <option value="Streetlight">💡 Streetlights & Electricity</option>
-              <option value="Infrastructure">🏢 Public Infrastructure</option>
-              <option value="Other">❓ Other Civic Problem</option>
-            </select>
-          </div>
-        </div>
-
-        {/* 3. Description */}
-        <div>
-          <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">
-            3. Detailed Description <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            required
-            rows={3}
-            placeholder="Describe the severity, how long it has persisted, and any specific safety risk..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full px-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-          />
-        </div>
-
-        {/* 4. Location & Map Card */}
-        <div className="space-y-3">
+        {/* STEP 1: PHOTO UPLOAD & AI COMPUTER VISION SCAN */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#EAE8E2] shadow-xs space-y-5">
           <div className="flex items-center justify-between">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
-              4. Location & Landmark <span className="text-red-500">*</span>
-            </label>
+            <h3 className="text-base font-black text-[#1D1C1D] flex items-center gap-2">
+              <Camera className="w-5 h-5 text-[#4A154B]" />
+              <span>1. Photograph Evidence & AI Vision Scan</span>
+            </h3>
+            <span className="text-xs font-bold text-[#E01E5A] bg-[#E01E5A]/10 px-2.5 py-0.5 rounded-full">
+              Step 1 of 3
+            </span>
+          </div>
+
+          {/* Image Preview & AI Scanner Display */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+            
+            {/* Image Preview Box with Bounding Box Overlay */}
+            <div className="md:col-span-6 relative h-64 rounded-2xl overflow-hidden bg-slate-900 border border-[#EAE8E2] group">
+              <img
+                src={imageUrl}
+                alt="Uploaded proof"
+                className="w-full h-full object-cover"
+              />
+
+              {/* Laser Scanning Animation when analyzing */}
+              {isAnalyzingImage && (
+                <div className="absolute inset-0 bg-black/40 backdrop-blur-xs flex flex-col items-center justify-center text-white space-y-2">
+                  <div className="w-full h-1 bg-[#2EB67D] shadow-[0_0_15px_#2EB67D] animate-bounce" />
+                  <span className="text-xs font-bold flex items-center gap-1.5">
+                    <Cpu className="w-4 h-4 text-[#2EB67D] animate-spin" />
+                    <span>Neural Network Scanning Image...</span>
+                  </span>
+                </div>
+              )}
+
+              {/* AI Bounding Box Overlay */}
+              {!isAnalyzingImage && aiAnalysis && (
+                <div 
+                  style={{
+                    left: `${aiAnalysis.boundingBox?.x || 20}%`,
+                    top: `${aiAnalysis.boundingBox?.y || 25}%`,
+                    width: `${aiAnalysis.boundingBox?.width || 60}%`,
+                    height: `${aiAnalysis.boundingBox?.height || 50}%`,
+                  }}
+                  className="absolute border-2 border-[#2EB67D] bg-[#2EB67D]/10 rounded-lg pointer-events-none flex items-start justify-start p-1"
+                >
+                  <span className="bg-[#2EB67D] text-black font-black text-[9px] px-1.5 py-0.5 rounded shadow-xs">
+                    {aiAnalysis.confidence}% {aiAnalysis.detectedCategory}
+                  </span>
+                </div>
+              )}
+
+              {/* Action Overlay */}
+              <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between">
+                <label className="px-3 py-1.5 bg-black/75 hover:bg-black text-white text-xs font-bold rounded-lg cursor-pointer backdrop-blur-xs transition flex items-center gap-1.5">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload Photo</span>
+                  <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
+                </label>
+
+                <span className="text-[10px] text-white/90 bg-black/60 px-2 py-1 rounded backdrop-blur-xs">
+                  GPS Geotag Embedded
+                </span>
+              </div>
+            </div>
+
+            {/* AI Analysis Result Card */}
+            <div className="md:col-span-6 space-y-3">
+              <div className="bg-[#F8F6F2] p-4 rounded-2xl border border-[#EAE8E2] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-extrabold text-[#4A154B] flex items-center gap-1">
+                    <Cpu className="w-3.5 h-3.5" />
+                    <span>CivicSight AI Detection</span>
+                  </span>
+                  {aiAnalysis && (
+                    <span className="text-[11px] font-black text-[#007A5A] bg-[#007A5A]/10 px-2 py-0.5 rounded">
+                      {aiAnalysis.confidence}% Confidence
+                    </span>
+                  )}
+                </div>
+
+                {aiAnalysis ? (
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <p className="text-[10px] text-[#616061] uppercase font-bold">Detected Defect</p>
+                      <p className="font-bold text-[#1D1C1D]">{aiAnalysis.detectedObject}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-[#EAE8E2]">
+                      <div>
+                        <p className="text-[10px] text-[#616061] uppercase font-bold">Severity Score</p>
+                        <p className="font-black text-[#E01E5A]">{aiAnalysis.severityScore}/100 ({aiAnalysis.hazardRisk} Risk)</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-[#616061] uppercase font-bold">Category</p>
+                        <p className="font-bold text-[#4A154B]">{aiAnalysis.detectedCategory}</p>
+                      </div>
+                    </div>
+
+                    {aiAnalysis.dimensionsEstimated && (
+                      <div className="pt-1 border-t border-[#EAE8E2]">
+                        <p className="text-[10px] text-[#616061] uppercase font-bold">Physical Extent</p>
+                        <p className="text-[11px] text-[#1D1C1D] font-medium">{aiAnalysis.dimensionsEstimated}</p>
+                      </div>
+                    )}
+
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={handleApplyAiDraft}
+                        className="w-full py-2 bg-[#4A154B] hover:bg-[#3B113C] text-white text-xs font-extrabold rounded-xl transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-[#ECB22E]" />
+                        <span>Apply AI Auto-Draft Details</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-[#616061] italic">Select or upload an image to run AI computer vision analysis.</p>
+                )}
+              </div>
+
+              {/* Quick Sample Photos */}
+              <div>
+                <p className="text-[11px] font-bold text-[#616061] mb-1.5">Quick Demo Images:</p>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                  {MOCK_SAMPLE_PHOTOS.map((sample) => (
+                    <button
+                      key={sample.url}
+                      type="button"
+                      onClick={() => applyPreset(sample)}
+                      className={`relative w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 transition cursor-pointer ${
+                        imageUrl === sample.url ? 'border-[#007A5A] ring-2 ring-[#007A5A]/30' : 'border-[#EAE8E2] opacity-75 hover:opacity-100'
+                      }`}
+                      title={sample.label}
+                    >
+                      <img src={sample.url} alt={sample.label} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* AI Duplicate Grievance Alert (if detected within 150m) */}
+          {duplicateCheck?.isDuplicate && duplicateCheck.matchedIssue && (
+            <div className="p-4 bg-[#FFF3C4] border border-[#ECB22E] rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="w-5 h-5 text-[#9E6A00] shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-extrabold text-[#1D1C1D]">
+                    AI Duplicate Match Detected ({duplicateCheck.distanceMeters}m away)
+                  </h4>
+                  <p className="text-[#616061] mt-0.5">
+                    Ticket <strong>{duplicateCheck.matchedIssue.id}</strong> ({duplicateCheck.matchedIssue.title}) already reports this exact problem.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  upvoteIssue(duplicateCheck.matchedIssue!.id);
+                  showNotification(`Upvoted ticket ${duplicateCheck.matchedIssue!.id} to escalate priority!`, 'success');
+                }}
+                className="px-4 py-2 bg-[#007A5A] hover:bg-[#006046] text-white font-bold rounded-xl shrink-0 transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <ThumbsUp className="w-3.5 h-3.5" />
+                <span>Upvote Existing Ticket ({duplicateCheck.matchedIssue.upvotes})</span>
+              </button>
+            </div>
+          )}
+
+        </div>
+
+        {/* STEP 2: GRIEVANCE PARTICULARS */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#EAE8E2] shadow-xs space-y-5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-black text-[#1D1C1D] flex items-center gap-2">
+              <FileText className="w-5 h-5 text-[#007A5A]" />
+              <span>2. Issue Particulars & Category</span>
+            </h3>
+            <span className="text-xs font-bold text-[#4A154B] bg-[#4A154B]/10 px-2.5 py-0.5 rounded-full">
+              Step 2 of 3
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            
+            {/* Title */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-extrabold text-[#1D1C1D] uppercase tracking-wider">
+                Issue Headline / Title *
+              </label>
+              <input
+                type="text"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Deep Hazardous Pothole on Main Road"
+                className="w-full px-4 py-3 bg-[#F8F6F2] border border-[#D4CEBF] rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:bg-white focus:border-[#4A154B] text-[#1D1C1D]"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-extrabold text-[#1D1C1D] uppercase tracking-wider">
+                Detailed Description *
+              </label>
+              <textarea
+                required
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Provide details about the issue size, hazard level, or surrounding hazards..."
+                className="w-full px-4 py-3 bg-[#F8F6F2] border border-[#D4CEBF] rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:bg-white focus:border-[#4A154B] text-[#1D1C1D]"
+              />
+            </div>
+
+            {/* Category & Priority Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              <div className="space-y-1.5">
+                <label className="text-xs font-extrabold text-[#1D1C1D] uppercase tracking-wider">
+                  Category
+                </label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value as IssueCategory)}
+                  className="w-full px-4 py-3 bg-[#F8F6F2] border border-[#D4CEBF] rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:bg-white focus:border-[#4A154B] text-[#1D1C1D]"
+                >
+                  <option value="Roads">🚗 Roads & Potholes</option>
+                  <option value="Garbage">🗑️ Garbage & Sanitation</option>
+                  <option value="Water">💧 Water Supply & Leakage</option>
+                  <option value="Streetlight">💡 Streetlight & Lighting</option>
+                  <option value="Drainage">🌊 Drainage & Sewerage</option>
+                  <option value="Infrastructure">🏢 Civic Infrastructure</option>
+                  <option value="Other">📍 Other Civic Grievance</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-extrabold text-[#1D1C1D] uppercase tracking-wider">
+                  Priority Level
+                </label>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as IssuePriority)}
+                  className="w-full px-4 py-3 bg-[#F8F6F2] border border-[#D4CEBF] rounded-xl text-xs sm:text-sm font-semibold focus:outline-none focus:bg-white focus:border-[#4A154B] text-[#1D1C1D]"
+                >
+                  <option value="High">🔴 High Priority (&lt; 24h SLA Target)</option>
+                  <option value="Medium">🟡 Medium Priority (48h SLA Target)</option>
+                  <option value="Low">🟢 Low Priority (Standard 72h SLA)</option>
+                </select>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+
+        {/* STEP 3: LOCATION & GPS MAPPING */}
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#EAE8E2] shadow-xs space-y-5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-black text-[#1D1C1D] flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-[#1264A3]" />
+              <span>3. Geolocation & Ward Assignment</span>
+            </h3>
             <button
               type="button"
-              onClick={handleFetchLocation}
+              onClick={handleGetLocation}
               disabled={isLocating}
-              className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 rounded-lg border border-blue-200 transition"
+              className="px-3.5 py-1.5 bg-[#007A5A] hover:bg-[#006046] text-white text-xs font-bold rounded-xl transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
             >
               <Navigation className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
-              <span>{isLocating ? 'Fetching GPS...' : 'Use My Current Location'}</span>
+              <span>{isLocating ? 'Locating...' : 'Auto-Detect GPS'}</span>
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Street Address</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-extrabold text-[#1D1C1D] uppercase tracking-wider">
+                Street Address / Landmark
+              </label>
               <input
                 type="text"
                 required
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-                placeholder="e.g. 100 Feet Road, 12th Main Corner"
+                placeholder="e.g. 100 Feet Road, Indiranagar"
+                className="w-full px-4 py-3 bg-[#F8F6F2] border border-[#D4CEBF] rounded-xl text-xs font-semibold focus:outline-none focus:bg-white text-[#1D1C1D]"
               />
             </div>
 
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1">Municipal Ward</label>
-              <select
+            <div className="space-y-1.5">
+              <label className="text-xs font-extrabold text-[#1D1C1D] uppercase tracking-wider">
+                Ward & Zone
+              </label>
+              <input
+                type="text"
+                required
                 value={ward}
                 onChange={(e) => setWard(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium bg-white"
-              >
-                <option value="Ward 14 - Indiranagar">Ward 14 - Indiranagar</option>
-                <option value="Ward 08 - Koramangala">Ward 08 - Koramangala</option>
-                <option value="Ward 05 - Shivaji Nagar">Ward 05 - Shivaji Nagar</option>
-                <option value="Ward 03 - Malleshwaram">Ward 03 - Malleshwaram</option>
-                <option value="Ward 12 - HSR Layout">Ward 12 - HSR Layout</option>
-                <option value="Ward 22 - Whitefield">Ward 22 - Whitefield</option>
-                <option value="Ward 09 - Jayanagar">Ward 09 - Jayanagar</option>
-                <option value="Ward 18 - Central Business District">Ward 18 - Central Business District</option>
-                <option value="Ward 20 - Bellandur">Ward 20 - Bellandur</option>
-              </select>
+                placeholder="e.g. Ward 14 - Indiranagar"
+                className="w-full px-4 py-3 bg-[#F8F6F2] border border-[#D4CEBF] rounded-xl text-xs font-semibold focus:outline-none focus:bg-white text-[#1D1C1D]"
+              />
             </div>
           </div>
 
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-600 mb-1">Nearest Landmark (Helps field team locate spot)</label>
-            <input
-              type="text"
-              value={landmark}
-              onChange={(e) => setLandmark(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-              placeholder="e.g. Opposite Costa Coffee, Metro Pillar 142"
-            />
-          </div>
-
-          {/* Interactive Mini Map Location Picker */}
-          <div className="pt-2">
-            <p className="text-[11px] text-slate-500 mb-2 flex items-center gap-1">
-              <Info className="w-3.5 h-3.5 text-blue-500" />
-              <span>Click anywhere on the map to fine-tune the exact pin coordinates:</span>
+          {/* Interactive Map with Click-to-Pick Location */}
+          <div className="space-y-2">
+            <p className="text-xs text-[#616061] font-medium">
+              Click anywhere on the map to pin the exact issue coordinates:
             </p>
             <InteractiveMap
-              issues={[]}
-              center={[lat, lng]}
-              zoom={14}
-              height="220px"
+              issues={issues}
+              height="300px"
               allowClickToPickLocation={true}
               onLocationPicked={(newLat, newLng) => {
                 setLat(newLat);
                 setLng(newLng);
+                setAddress(`Coordinates: ${newLat.toFixed(4)}° N, ${newLng.toFixed(4)}° E`);
               }}
+              center={[lat, lng]}
+              zoom={13}
             />
           </div>
+
         </div>
 
-        {/* 5. Priority Selection */}
-        <div>
-          <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">
-            5. Urgency / Priority Level <span className="text-red-500">*</span>
-          </label>
-
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { level: 'Low' as const, label: 'Low', desc: 'Non-urgent (72-96h SLA)', color: 'border-slate-300 hover:border-slate-400' },
-              { level: 'Medium' as const, label: 'Medium', desc: 'Moderate nuisance (48h SLA)', color: 'border-amber-300 hover:border-amber-400' },
-              { level: 'High' as const, label: 'High Priority', desc: 'Immediate safety hazard (24h SLA)', color: 'border-red-400 hover:border-red-500' },
-            ].map((p) => (
-              <button
-                key={p.level}
-                type="button"
-                onClick={() => setPriority(p.level)}
-                className={`p-3 rounded-2xl border-2 text-left transition flex flex-col justify-between ${
-                  priority === p.level
-                    ? p.level === 'High' 
-                      ? 'border-red-500 bg-red-50/70 ring-2 ring-red-200'
-                      : p.level === 'Medium'
-                      ? 'border-amber-500 bg-amber-50/70 ring-2 ring-amber-200'
-                      : 'border-blue-500 bg-blue-50/70 ring-2 ring-blue-200'
-                    : 'border-slate-200 bg-slate-50/40 hover:bg-slate-50'
-                }`}
-              >
-                <div>
-                  <span className={`text-xs font-bold ${priority === p.level ? 'text-slate-900' : 'text-slate-700'}`}>
-                    {p.label}
-                  </span>
-                  <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">{p.desc}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Submit Button */}
-        <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-slate-500">
-            Reporting as: <span className="font-bold text-slate-800">{currentUser.name}</span> ({currentUser.phone})
+        {/* SUBMIT BUTTON */}
+        <div className="p-6 bg-white rounded-3xl border border-[#EAE8E2] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+          <div className="text-xs text-[#616061]">
+            Filing report as: <strong className="text-[#1D1C1D]">{currentUser.name}</strong> ({currentUser.phone})
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white text-xs sm:text-sm font-extrabold rounded-2xl shadow-lg shadow-blue-600/30 transition transform hover:scale-102 active:scale-98 flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-8 py-4 bg-[#007A5A] hover:bg-[#006046] text-white font-black text-sm rounded-2xl shadow-md transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
           >
             {isSubmitting ? (
               <>

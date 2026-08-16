@@ -24,7 +24,6 @@ export const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { 
-    currentRole, 
     switchRole, 
     getIssueById,
     showNotification,
@@ -92,7 +91,7 @@ export const Navbar: React.FC = () => {
     publicLinks;
 
   return (
-    <header className="sticky top-0 z-40 bg-[#F8F6F2]/95 backdrop-blur-md border-b border-[#EAE8E2] transition-all">
+    <header className="sticky top-0 z-40 bg-[#F8F6F2]/95 backdrop-blur-md border-b border-[#EAE8E2] transition-all" aria-label="Primary navigation">
       
       {/* Upper Subtle Toolbar: Clean & Integrated without heavy dark bars */}
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-2.5 pb-1 flex flex-wrap items-center justify-between gap-3 text-xs border-b border-[#EAE8E2]/60">
@@ -105,9 +104,9 @@ export const Navbar: React.FC = () => {
           </span>
 
           <div className="hidden sm:inline-flex items-center gap-1 text-[11px] text-[#616061] font-semibold">
-            <span>• Node.js Backend:</span>
+            <span>{isBackendConnected ? 'Shared API:' : 'Storage:'}</span>
             <span className={`font-bold ${isBackendConnected ? 'text-[#007A5A]' : 'text-[#9E6A00]'}`}>
-              {isBackendConnected ? 'Online (Port 5000)' : 'Standby'}
+              {isBackendConnected ? 'Online' : 'Demo mode · this browser'}
             </span>
           </div>
         </div>
@@ -267,6 +266,9 @@ export const Navbar: React.FC = () => {
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden p-2.5 rounded-xl text-slate-700 hover:bg-[#EAE8E2] border border-[#EAE8E2] bg-white"
+            aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-navigation"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -276,7 +278,7 @@ export const Navbar: React.FC = () => {
 
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-[#EAE8E2] px-6 py-4 space-y-3 shadow-lg">
+        <div id="mobile-navigation" className="lg:hidden bg-white border-t border-[#EAE8E2] px-6 py-4 space-y-3 shadow-lg">
           <form onSubmit={handleTrackSubmit} className="mb-3">
             <input
               type="text"

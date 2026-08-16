@@ -109,7 +109,7 @@ export const LandingPage: React.FC = () => {
     <div className="bg-[#F8F6F2] min-h-screen text-[#1D1C1D]">
       
       {/* 1. SLACK-INSPIRED HERO SECTION */}
-      <section className="pt-10 pb-20 lg:pt-16 lg:pb-24 border-b border-[#EAE8E2]">
+      <section className="landing-hero pt-10 pb-20 lg:pt-16 lg:pb-24 border-b border-[#EAE8E2]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             
@@ -158,11 +158,12 @@ export const LandingPage: React.FC = () => {
 
               {/* Tracking Input */}
               <div className="pt-2 max-w-md">
-                <form onSubmit={handleTrackSubmit} className="bg-white p-1.5 rounded-xl shadow-xs border border-[#D4CEBF] flex items-center gap-2">
+                <form onSubmit={handleTrackSubmit} className="bg-white p-1.5 rounded-xl shadow-xs border border-[#D4CEBF] flex items-center gap-2" aria-label="Track a complaint">
                   <Search className="w-4 h-4 text-slate-400 ml-2.5 shrink-0" />
                   <input
                     type="text"
                     placeholder="Enter Complaint ID (e.g. NS-2026-00124)"
+                    aria-label="Complaint ID"
                     value={trackId}
                     onChange={(e) => setTrackId(e.target.value)}
                     className="flex-1 bg-transparent text-[#1D1C1D] text-xs font-semibold focus:outline-none placeholder-slate-400 py-1.5"
@@ -174,6 +175,9 @@ export const LandingPage: React.FC = () => {
                     Track Status
                   </button>
                 </form>
+                <p className="mt-2 text-[11px] font-medium text-[#616061]">
+                  Submit a photo, confirm the location, and follow every update in one place.
+                </p>
                 <div className="flex items-center gap-2 mt-2 text-[11px] text-[#616061]">
                   <span>Demo complaint IDs:</span>
                   <button onClick={() => setTrackId('NS-2026-00124')} className="underline font-mono font-bold text-[#1264A3]">NS-2026-00124</button>

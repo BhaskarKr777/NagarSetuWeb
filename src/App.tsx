@@ -4,6 +4,8 @@ import { AppProvider, useApp } from './context/AppContext';
 import { Navbar } from './components/common/Navbar';
 import { Footer } from './components/common/Footer';
 import { ToastNotification } from './components/common/ToastNotification';
+import { NagarMitraChat } from './components/common/NagarMitraChat';
+
 
 // Pages
 import { LandingPage } from './pages/public/LandingPage';
@@ -41,11 +43,12 @@ const ProtectedAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children
 const AppRoutes: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[#F8F6F2] text-[#1D1C1D] font-sans antialiased">
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       <Navbar />
       <ToastNotification />
 
       
-      <main className="flex-1">
+      <main id="main-content" className="flex-1" tabIndex={-1}>
         <Routes>
           {/* Public Slugs */}
           <Route path="/" element={<LandingPage />} />
@@ -132,10 +135,12 @@ const AppRoutes: React.FC = () => {
         </Routes>
       </main>
 
+      <NagarMitraChat />
       <Footer />
     </div>
   );
 };
+
 
 export default function App() {
   return (
