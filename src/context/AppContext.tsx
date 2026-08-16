@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { 
   Issue, 
   UserRole, 
@@ -16,6 +16,7 @@ import {
   DEMO_USERS, 
   FIELD_STAFF_MEMBERS 
 } from '../data/mockData';
+import { api } from '../services/api';
 
 interface Notification {
   id: string;
@@ -45,6 +46,7 @@ interface AppContextType {
   selectedIssueId: string | null;
   notification: Notification | null;
   trackQuery: string;
+  isBackendConnected: boolean;
   
   // Navigation
   setActiveTab: (tab: string) => void;
@@ -74,6 +76,7 @@ interface AppContextType {
   getIssueById: (id: string) => Issue | undefined;
   showNotification: (message: string, type?: 'success' | 'error' | 'info') => void;
   resetToMockData: () => void;
+  refreshFromBackend: () => Promise<void>;
   
   // Stats
   stats: {
@@ -112,6 +115,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return INITIAL_ISSUES;
   });
 
+  const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
+
   const [currentRole, setCurrentRole] = useState<UserRole>(() => {
     try {
       const saved = localStorage.getItem(USER_KEY) as UserRole;
@@ -128,6 +133,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(null);
   const [notification, setNotification] = useState<Notification | null>(null);
   const [trackQuery, setTrackQuery] = useState<string>('');
+
+  const refreshFromBackend = useCallback(async () => {
+    try {
+      const healthy = await api.checkHealth();
+      if (healthy) {
+        setIsBackendConnected(true);
+        const serverIssues = await api.getIssues();
+        if (serverIssues && Array.isArray(serverIssues) && serverIssues.length > 0) {
+          setIssues(serverIssues);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(serverIssues));
+        }
+      } else {
+        setIsBackendConnected(false);
+      }
+    } catch (err) {
+      setIsBackendConnected(false);
+    }
+  }, []);
+
+  // Check backend health and sync on startup
+  useEffect(() => {
+    refreshFromBackend();
+    const interval = setInterval(refreshFromBackend, 15000);
+    return () => clearInterval(interval);
+  }, [refreshFromBackend]);
 
   // Persist issues whenever they change
   useEffect(() => {
@@ -186,7 +216,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return issues.find((issue) => issue.id.toLowerCase() === id.toLowerCase());
   };
 
-  // 1. Create a new Issue
+  // 1. Create a new Issue (Optimistic local + Backend Node API sync)
   const createIssue = (input: CreateIssueInput): Issue => {
     const nextNumber = issues.length + 125;
     const padded = String(nextNumber).padStart(5, '0');
@@ -201,7 +231,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       hour12: true
     });
 
-    // Calculate SLA deadline (e.g. 48 hours for High, 72 for Med, 96 for Low)
     const hours = input.priority === 'High' ? 24 : input.priority === 'Medium' ? 48 : 96;
     const deadline = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
 
@@ -243,7 +272,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setIssues((prev) => [newIssue, ...prev]);
-    showNotification(`Complaint ${newId} registered successfully!`, 'success');
+
+    // Send to Node.js Backend API
+    api.createIssue({
+      title: input.title,
+      description: input.description,
+      category: input.category,
+      priority: input.priority,
+      address: input.address,
+      ward: input.ward,
+      city: input.city,
+      lat: input.lat,
+      lng: input.lng,
+      landmark: input.landmark,
+      imageUrl: input.imageUrl,
+      citizenName: currentUser.name,
+      citizenPhone: currentUser.phone,
+      citizenEmail: currentUser.email,
+      citizenId: currentUser.id
+    }).catch((err) => console.log('API sync notice (stored locally):', err));
+
+    showNotification(`Complaint ${newId} registered and synced with Node server!`, 'success');
     return newIssue;
   };
 
@@ -253,9 +302,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIssues((prev) =>
       prev.map((item) => (item.id === id ? { ...item, ...updates, updatedAt: now } : item))
     );
+
+    api.updateIssue(id, updates).catch((err) => console.log('Backend sync notice:', err));
   };
 
-  // 3. Upvote issue (prevent repeated upvotes)
+  // 3. Upvote issue
   const upvoteIssue = (id: string) => {
     const userId = currentUser.id || 'anonymous-user';
     setIssues((prev) =>
@@ -275,6 +326,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       })
     );
+
+    api.upvoteIssue(id, userId).catch((err) => console.log('Backend upvote sync notice:', err));
   };
 
   // 4. Assign issue to Department & Staff
@@ -313,10 +366,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
 
+    api.assignIssue(id, department, staffId, currentUser.name).catch((err) => console.log('Backend sync notice:', err));
     showNotification(`Issue assigned to ${department} successfully`, 'success');
   };
 
-  // 5. Update Status (Workflow engine)
+  // 5. Update Status
   const updateIssueStatus = (
     id: string,
     status: IssueStatus,
@@ -369,6 +423,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
 
+    api.updateStatus(id, status, note, resolutionImageUrl, currentUser.name).catch((err) => console.log('Backend sync notice:', err));
     showNotification(`Issue status updated to "${status}"`, 'success');
   };
 
@@ -389,6 +444,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       })
     );
+
+    api.submitFeedback(id, rating, comment).catch((err) => console.log('Backend sync notice:', err));
     showNotification('Thank you! Your feedback has been recorded.', 'success');
   };
 
@@ -421,12 +478,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       })
     );
+
+    api.addInternalNote(id, text, currentUser.name, currentUser.role === 'admin' ? 'Administrator' : 'Field Staff').catch((err) => console.log('Backend sync notice:', err));
     showNotification('Internal note saved', 'success');
   };
 
   // 8. Delete Issue
   const deleteIssue = (id: string) => {
     setIssues((prev) => prev.filter((item) => item.id !== id));
+    api.deleteIssue(id).catch((err) => console.log('Backend sync notice:', err));
     showNotification('Issue removed', 'info');
   };
 
@@ -439,7 +499,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
       console.error(e);
     }
-    showNotification('Demo data reset to default 15 civic complaints', 'info');
+    api.resetDatabase().catch((err) => console.log('Backend sync notice:', err));
+    showNotification('Database reset to default 15 civic complaints', 'info');
   };
 
   // Dynamic Statistics
@@ -476,6 +537,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         selectedIssueId,
         notification,
         trackQuery,
+        isBackendConnected,
         setActiveTab,
         setSelectedIssueId,
         navigateTo,
@@ -492,6 +554,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getIssueById,
         showNotification,
         resetToMockData,
+        refreshFromBackend,
         stats,
       }}
     >

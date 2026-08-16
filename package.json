@@ -5,10 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:backend": "npm --prefix backend run dev",
     "build": "tsc -b && vite build",
+    "build:backend": "npm --prefix backend run build",
+    "start:backend": "npm --prefix backend start",
     "lint": "oxlint",
     "preview": "vite preview"
   },
+
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "canvas-confetti": "^1.9.4",

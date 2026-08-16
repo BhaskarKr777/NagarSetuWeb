@@ -6,9 +6,36 @@
 
 ## 🌟 Overview
 
-**NagarSetu** is a modern, responsive civic-tech web application that bridges the gap between urban citizens and municipal administrative departments. 
+**NagarSetu** is a modern, responsive civic-tech web application with a dedicated **Node.js Express backend** that bridges the gap between urban citizens and municipal administrative departments. 
 
 Citizens can report civic issues like potholes, overflowing garbage dumpsters, broken streetlights, water pipeline leakages, and clogged drainage with photographic evidence and geotagging. Municipal authorities can triage, assign, track SLAs, and field staff can upload photographic proof of on-ground resolution.
+
+---
+
+## 🏗️ Architecture: Full-Stack Node.js + React
+
+```
+NagarSetuWeb/
+├── backend/                  # 🚀 Node.js Express TypeScript Backend Server (Port 5000)
+│   ├── src/
+│   │   ├── index.ts          # Server entry point, CORS, logging, health check
+│   │   ├── db.ts             # File-based database engine with auto-persistence (db.json)
+│   │   ├── types.ts          # Backend TypeScript interfaces
+│   │   ├── data/             # Seed database with realistic Indian civic grievances
+│   │   └── routes/
+│   │       ├── issues.ts     # CRUD, upvotes, assignments, status lifecycle, feedback, audit notes
+│   │       ├── departments.ts# Municipal wings & staff roster
+│   │       └── analytics.ts  # Aggregated KPIs, turnaround hours, SLA breach calculations
+│   └── package.json
+│
+├── src/                      # ⚡ React 19 + TypeScript + Vite + Tailwind CSS Frontend
+│   ├── components/common/    # Navbar, Footer, InteractiveMap (Leaflet), Timeline, StatusBadge, Cards
+│   ├── context/AppContext.tsx# Unified state store synced with Node.js backend API & localStorage fallback
+│   ├── services/api.ts       # Frontend REST API client for backend
+│   └── pages/                # Public, Citizen, Admin, and Field Staff portals
+│
+└── vite.config.ts            # Vite proxy automatically routing /api requests to http://localhost:5000
+```
 
 ---
 
@@ -41,86 +68,79 @@ A quick **1-Click Demo Bar** is pinned to the top of the app to switch personas 
 
 ## 🛠️ Technology Stack
 
+- **Backend**: Node.js, Express, TypeScript, tsx, CORS, Multer
 - **Frontend Framework**: React 19 + TypeScript
-- **Bundler & Dev Server**: Vite
+- **Bundler & Dev Server**: Vite with automatic `/api` proxy
 - **Styling**: Tailwind CSS v4 (Light-theme-first, accessible, modern civic design)
 - **Icons**: Lucide React
 - **Interactive Spatial Maps**: Leaflet + OpenStreetMap
 - **Data Visualizations**: Recharts
 - **Celebration Effects**: Canvas Confetti
-- **Data Persistence**: `localStorage` (Seeded with 15+ realistic Indian municipal complaints)
+- **Data Persistence**: Node.js JSON database (`backend/data/db.json`) + client `localStorage` backup
 
 ---
 
 ## 💻 Local Development Setup
 
 ### 1. Prerequisites
-- Node.js (v18 or higher recommended)
-- npm or yarn or pnpm
+- Node.js (v18 or higher)
+- npm
 
 ### 2. Installation
 ```bash
-# Clone or navigate to the project directory
-cd NagarSetuWeb
-
-# Install all dependencies
+# Install frontend dependencies
 npm install
+
+# Install backend dependencies
+cd backend && npm install && cd ..
 ```
 
-### 3. Running Locally
+### 3. Running Both Frontend & Backend
+You can run both in separate terminal windows:
+
+**Terminal 1 (Backend Node Server):**
 ```bash
-# Start the local Vite development server
+npm run dev:backend
+# Or: cd backend && npm run dev
+# Server starts at: http://localhost:5000
+```
+
+**Terminal 2 (Frontend Vite Server):**
+```bash
 npm run dev
+# App starts at: http://localhost:5173
 ```
-Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-### 4. Building for Production
-```bash
-# Type check and build optimized static production bundle
-npm run build
+The frontend will automatically show the live badge: **`🟢 Node.js API Online (Port 5000)`**.
 
-# Preview production build locally
-npm run preview
-```
+---
+
+## 📡 Backend REST API Reference
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/health` | Server health check & status |
+| `GET` | `/api/issues` | Get all issues (supports `?category=`, `?status=`, `?priority=`, `?search=`) |
+| `GET` | `/api/issues/:id` | Get issue details by ID (e.g. `NS-2026-00124`) |
+| `POST` | `/api/issues` | Create new civic grievance |
+| `PATCH` | `/api/issues/:id` | Update issue fields |
+| `POST` | `/api/issues/:id/upvote` | Upvote grievance with anti-duplicate validation |
+| `POST` | `/api/issues/:id/assign` | Assign department & field staff |
+| `POST` | `/api/issues/:id/status` | Update status (`In Progress`, `Resolved`, etc.) & upload photo proof |
+| `POST` | `/api/issues/:id/feedback`| Submit citizen 1-5 star rating and comments |
+| `POST` | `/api/issues/:id/notes` | Add internal municipal audit remarks |
+| `POST` | `/api/issues/reset` | Reset database to initial seed dataset |
+| `GET` | `/api/departments` | Get municipal departments |
+| `GET` | `/api/staff` | Get field staff roster |
+| `GET` | `/api/analytics` | Aggregated KPI analytics & SLA benchmarks |
 
 ---
 
 ## ☁️ Deployment Instructions
 
-### Deploy to Vercel (Recommended)
-1. Push this repository to GitHub or GitLab.
-2. Go to [Vercel Dashboard](https://vercel.com/new).
-3. Import your `NagarSetuWeb` repository.
-4. Framework Preset will automatically detect **Vite**.
-5. Build Command: `npm run build`
-6. Output Directory: `dist`
-7. Click **Deploy**! 🚀
-
-### Deploy to Netlify
-1. Go to [Netlify Dashboard](https://app.netlify.com).
-2. Click **Add new site** > **Import an existing project**.
-3. Select your repository.
-4. Set Build command: `npm run build`
-5. Set Publish directory: `dist`
-6. Click **Deploy NagarSetu**!
-
----
-
-## 🔄 Complete Presentation Demo Flow
-
-1. Open **NagarSetu** homepage.
-2. Click **"Report an Issue"** or switch role to **Citizen**.
-3. Click a preset (e.g. `Pothole on Road`) or upload an image, select category, add description, and choose priority.
-4. Click **"Submit Grievance Report"** to view the confetti celebration and generated ID (e.g. `NS-2026-00140`).
-5. Click **"View Report Details & Timeline"** to inspect the 5-stage lifecycle progress.
-6. Switch to **Admin** role in the top demo bar.
-7. Observe updated KPI statistics on the **Admin Dashboard** and locate the new complaint in the **Urgent Triage Queue**.
-8. Open the complaint, assign department to **Roads & Infrastructure** and field staff to **Ramesh Kumar**, then click **Save & Dispatch**.
-9. Switch to **Field Staff** role in the top demo bar.
-10. Open the assigned task, click **"Start Work on Site"**, select a resolution photo preset (or upload image), and click **"Mark as Resolved & Upload Proof"**.
-11. Switch back to **Citizen** role.
-12. Notice the issue is marked **Resolved**, inspect the Before vs After photo evidence, and submit a **5-Star Rating & Citizen Feedback**.
-13. Visit the **Live Spatial Map** and **Community Feed** to view the resolved ticket pin and upvote community issues.
+### Full-Stack or Frontend Deployment:
+- **Frontend (Vercel / Netlify)**: Push the repository to GitHub. Connect to Vercel/Netlify. Build command: `npm run build`, Publish directory: `dist`.
+- **Backend (Render / Railway / Fly.io / AWS EC2)**: Point to the `backend/` folder, run `npm install` and `npm start`.
 
 ---
 

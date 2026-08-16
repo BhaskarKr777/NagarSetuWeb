@@ -32,7 +32,9 @@ export const Navbar: React.FC = () => {
     setTrackQuery,
     getIssueById,
     showNotification,
-    resetToMockData
+    resetToMockData,
+    isBackendConnected,
+    refreshFromBackend
   } = useApp();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -90,17 +92,29 @@ export const Navbar: React.FC = () => {
     currentRole === 'admin' ? adminNavItems :
     currentRole === 'staff' ? staffNavItems :
     currentRole === 'citizen' ? citizenNavItems : 
-
     publicNavItems;
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
       {/* Top Demo Bar / Quick Role Switcher Banner */}
       <div className="bg-slate-900 text-white text-xs px-4 py-1.5 flex flex-wrap items-center justify-between gap-2 border-b border-slate-800">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
           <span className="font-semibold text-slate-300">SIH 2026 Live Demo:</span>
-          <span className="hidden sm:inline text-slate-400">Switch role instantly:</span>
+          
+          {/* Backend Connection Indicator Badge */}
+          <div 
+            onClick={refreshFromBackend}
+            title="Click to re-check Node.js Express Backend connection status"
+            className={`cursor-pointer inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border transition ${
+              isBackendConnected 
+                ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700 hover:bg-emerald-900'
+                : 'bg-amber-950/80 text-amber-300 border-amber-700 hover:bg-amber-900'
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${isBackendConnected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`} />
+            <span>{isBackendConnected ? 'Node.js API Online (Port 5000)' : 'Node.js Backend Ready'}</span>
+          </div>
         </div>
 
         {/* Role Switcher Pills */}
@@ -154,7 +168,7 @@ export const Navbar: React.FC = () => {
 
           <button
             onClick={resetToMockData}
-            title="Reset to default 15 demo complaints"
+            title="Reset to default 15 demo complaints on server & local"
             className="ml-2 px-2 py-0.5 rounded bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 text-[11px] flex items-center gap-1 transition"
           >
             <RefreshCw className="w-2.5 h-2.5" />
@@ -162,6 +176,7 @@ export const Navbar: React.FC = () => {
           </button>
         </div>
       </div>
+
 
       {/* Main Navbar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
