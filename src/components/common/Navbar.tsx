@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
-import { UserRole } from '../../types';
 import { 
   PlusCircle, 
   Search, 
@@ -13,32 +13,29 @@ import {
   User, 
   LogOut, 
   Menu, 
-  X,
-  FileText,
-  Home,
-  CheckCircle2,
-  Sparkles,
-  RefreshCw
+  X, 
+  FileText, 
+  Home, 
+  Lock, 
+  RefreshCw 
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { 
     currentRole, 
-    currentUser, 
-    activeTab, 
-    navigateTo, 
     switchRole, 
-    trackQuery, 
-    setTrackQuery,
     getIssueById,
     showNotification,
     resetToMockData,
     isBackendConnected,
-    refreshFromBackend
+    isAdminAuthenticated,
+    logoutAdmin
   } = useApp();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [trackInput, setTrackInput] = useState(trackQuery || '');
+  const [trackInput, setTrackInput] = useState('');
 
   const handleTrackSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,85 +43,89 @@ export const Navbar: React.FC = () => {
     
     const issue = getIssueById(trackInput.trim());
     if (issue) {
-      navigateTo(currentRole === 'admin' ? 'admin-issue-details' : 'report-details', issue.id);
+      if (location.pathname.startsWith('/admin')) {
+        navigate(`/admin/issues/${issue.id}`);
+      } else if (location.pathname.startsWith('/staff')) {
+        navigate(`/staff/task/${issue.id}`);
+      } else {
+        navigate(`/citizen/report/${issue.id}`);
+      }
       showNotification(`Found complaint ${issue.id}`, 'info');
     } else {
       showNotification(`No complaint found with ID "${trackInput}". Try e.g. NS-2026-00124`, 'error');
     }
   };
 
-    interface NavItem {
-      id: string;
-      label: string;
-      icon: any;
-      highlight?: boolean;
-    }
-
-  const citizenNavItems: NavItem[] = [
-    { id: 'citizen-dashboard', label: 'Dashboard', icon: Home },
-    { id: 'report-issue', label: 'Report Issue', icon: PlusCircle, highlight: true },
-    { id: 'my-reports', label: 'My Reports', icon: FileText },
-    { id: 'community', label: 'Community Feed', icon: Users },
-    { id: 'profile', label: 'My Profile', icon: User },
+  const citizenLinks = [
+    { to: '/citizen/dashboard', label: 'Dashboard', icon: Home },
+    { to: '/citizen/report', label: 'Report Issue', icon: PlusCircle, highlight: true },
+    { to: '/citizen/my-reports', label: 'My Reports', icon: FileText },
+    { to: '/community', label: 'Community Feed', icon: Users },
+    { to: '/citizen/profile', label: 'Profile', icon: User },
   ];
 
-  const adminNavItems: NavItem[] = [
-    { id: 'admin-dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'admin-issues', label: 'Issues Table', icon: Layers },
-    { id: 'admin-map', label: 'Live Map', icon: MapPin },
-    { id: 'admin-analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'admin-departments', label: 'Departments', icon: ShieldCheck },
+  const adminLinks = [
+    { to: '/admin/dashboard', label: 'Dashboard', icon: BarChart3 },
+    { to: '/admin/issues', label: 'Issues Table', icon: Layers },
+    { to: '/admin/map', label: 'Live GIS Map', icon: MapPin },
+    { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+    { to: '/admin/departments', label: 'Departments', icon: ShieldCheck },
   ];
 
-  const staffNavItems: NavItem[] = [
-    { id: 'staff-dashboard', label: 'My Tasks', icon: HardHat },
-    { id: 'admin-map', label: 'Task Map', icon: MapPin },
-    { id: 'community', label: 'Community View', icon: Users },
+  const staffLinks = [
+    { to: '/staff/dashboard', label: 'Tasks Queue', icon: HardHat },
+    { to: '/admin/map', label: 'Field Map', icon: MapPin },
+    { to: '/community', label: 'Community', icon: Users },
   ];
 
-  const publicNavItems: NavItem[] = [
-    { id: 'landing', label: 'Home', icon: Home },
-    { id: 'community', label: 'Community Feed', icon: Users },
-    { id: 'login', label: 'Demo Login', icon: User },
+  const publicLinks = [
+    { to: '/', label: 'Overview', icon: Home },
+    { to: '/community', label: 'Community Feed', icon: Users },
+    { to: '/login', label: 'Citizen Sign In', icon: User },
+    { to: '/admin/login', label: 'Admin Login', icon: Lock },
   ];
 
-  const navItems: NavItem[] = 
-    currentRole === 'admin' ? adminNavItems :
-    currentRole === 'staff' ? staffNavItems :
-    currentRole === 'citizen' ? citizenNavItems : 
-    publicNavItems;
+  const currentLinks = 
+    location.pathname.startsWith('/admin') ? adminLinks :
+    location.pathname.startsWith('/staff') ? staffLinks :
+    location.pathname.startsWith('/citizen') ? citizenLinks : 
+    publicLinks;
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
-      {/* Top Demo Bar / Quick Role Switcher Banner */}
-      <div className="bg-slate-900 text-white text-xs px-4 py-1.5 flex flex-wrap items-center justify-between gap-2 border-b border-slate-800">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-          <span className="font-semibold text-slate-300">SIH 2026 Live Demo:</span>
-          
-          {/* Backend Connection Indicator Badge */}
-          <div 
-            onClick={refreshFromBackend}
-            title="Click to re-check Node.js Express Backend connection status"
-            className={`cursor-pointer inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold border transition ${
-              isBackendConnected 
-                ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700 hover:bg-emerald-900'
-                : 'bg-amber-950/80 text-amber-300 border-amber-700 hover:bg-amber-900'
-            }`}
-          >
-            <span className={`w-1.5 h-1.5 rounded-full ${isBackendConnected ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'}`} />
-            <span>{isBackendConnected ? 'Node.js API Online (Port 5000)' : 'Node.js Backend Ready'}</span>
+    <header className="sticky top-0 z-40 bg-[#F8F6F2]/95 backdrop-blur-md border-b border-[#EAE8E2] transition-all">
+      
+      {/* Upper Subtle Toolbar: Clean & Integrated without heavy dark bars */}
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-2.5 pb-1 flex flex-wrap items-center justify-between gap-3 text-xs border-b border-[#EAE8E2]/60">
+        
+        {/* Left: Live Status Pill */}
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#007A5A]/10 text-[#007A5A] text-[11px] font-bold border border-[#007A5A]/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#2EB67D] animate-pulse" />
+            <span>SIH 2026 Civic Platform</span>
+          </span>
+
+          <div className="hidden sm:inline-flex items-center gap-1 text-[11px] text-[#616061] font-semibold">
+            <span>• Node.js Backend:</span>
+            <span className={`font-bold ${isBackendConnected ? 'text-[#007A5A]' : 'text-[#9E6A00]'}`}>
+              {isBackendConnected ? 'Online (Port 5000)' : 'Standby'}
+            </span>
           </div>
         </div>
 
-        {/* Role Switcher Pills */}
-        <div className="flex items-center gap-1.5 flex-wrap">
+        {/* Right: Clean Role Navigation Switcher with Soft Borders */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] font-bold text-[#616061] mr-1 hidden md:inline">Portal:</span>
+          
           <button
-            onClick={() => switchRole('citizen')}
-            className={`px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 transition ${
-              currentRole === 'citizen'
-                ? 'bg-blue-600 text-white shadow-sm ring-2 ring-blue-400'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            type="button"
+            onClick={() => {
+              switchRole('citizen');
+              navigate('/citizen/dashboard');
+            }}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+              location.pathname.startsWith('/citizen')
+                ? 'bg-[#4A154B] text-white shadow-2xs'
+                : 'bg-white text-[#4A484A] hover:bg-[#EAE8E2] border border-[#EAE8E2]'
             }`}
           >
             <User className="w-3 h-3" />
@@ -132,23 +133,35 @@ export const Navbar: React.FC = () => {
           </button>
 
           <button
-            onClick={() => switchRole('admin')}
-            className={`px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 transition ${
-              currentRole === 'admin'
-                ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-400'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            type="button"
+            onClick={() => {
+              if (isAdminAuthenticated) {
+                switchRole('admin');
+                navigate('/admin/dashboard');
+              } else {
+                navigate('/admin/login');
+              }
+            }}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+              location.pathname.startsWith('/admin')
+                ? 'bg-[#4A154B] text-white shadow-2xs'
+                : 'bg-white text-[#4A484A] hover:bg-[#EAE8E2] border border-[#EAE8E2]'
             }`}
           >
             <ShieldCheck className="w-3 h-3" />
-            <span>Admin</span>
+            <span>Admin {isAdminAuthenticated ? '✓' : ''}</span>
           </button>
 
           <button
-            onClick={() => switchRole('staff')}
-            className={`px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 transition ${
-              currentRole === 'staff'
-                ? 'bg-amber-600 text-white shadow-sm ring-2 ring-amber-400'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+            type="button"
+            onClick={() => {
+              switchRole('staff');
+              navigate('/staff/dashboard');
+            }}
+            className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
+              location.pathname.startsWith('/staff')
+                ? 'bg-[#4A154B] text-white shadow-2xs'
+                : 'bg-white text-[#4A484A] hover:bg-[#EAE8E2] border border-[#EAE8E2]'
             }`}
           >
             <HardHat className="w-3 h-3" />
@@ -156,193 +169,147 @@ export const Navbar: React.FC = () => {
           </button>
 
           <button
-            onClick={() => switchRole('public')}
-            className={`px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 transition ${
-              currentRole === 'public'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            <span>Landing</span>
-          </button>
-
-          <button
+            type="button"
             onClick={resetToMockData}
-            title="Reset to default 15 demo complaints on server & local"
-            className="ml-2 px-2 py-0.5 rounded bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 text-[11px] flex items-center gap-1 transition"
+            title="Reset to default 15 demo complaints"
+            className="p-1 rounded-lg bg-white text-slate-400 hover:text-[#4A154B] border border-[#EAE8E2] transition cursor-pointer"
           >
-            <RefreshCw className="w-2.5 h-2.5" />
-            <span className="hidden md:inline">Reset Data</span>
+            <RefreshCw className="w-3 h-3" />
           </button>
         </div>
+
       </div>
 
-
-      {/* Main Navbar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
+      {/* Main Navbar Bar: Spacious, Clean Slack Aesthetics */}
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-3.5 sm:py-4">
+        <div className="flex items-center justify-between gap-6">
           
-          {/* Logo */}
-          <div 
-            onClick={() => navigateTo(currentRole === 'public' ? 'landing' : `${currentRole}-dashboard`)} 
-            className="flex items-center gap-3 cursor-pointer group shrink-0"
-          >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-700 to-blue-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5z" />
-                <path d="M2 17l10 5 10-5" />
-                <path d="M2 12l10 5 10-5" />
-              </svg>
+          {/* Logo with Slack character */}
+          <NavLink to="/" className="flex items-center gap-3 shrink-0 group">
+            <div className="w-10 h-10 rounded-2xl bg-[#4A154B] text-white flex items-center justify-center font-black text-2xl shadow-xs group-hover:bg-[#3B113C] transition transform group-hover:scale-102">
+              #
             </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-xl tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors">
-                  Nagar<span className="text-blue-600">Setu</span>
-                </span>
-                <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 uppercase tracking-wider">
-                  Civic Portal
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-500 font-medium tracking-wide uppercase">Report • Track • Resolve</p>
+            <div className="flex items-center gap-1">
+              <span className="text-2xl font-black tracking-tight text-[#1D1C1D]">
+                NagarSetu
+              </span>
+              <span className="text-[#E01E5A] font-serif font-black text-2xl leading-none">*</span>
             </div>
-          </div>
+          </NavLink>
 
-          {/* Quick Track Input Bar (Desktop) */}
-          <form onSubmit={handleTrackSubmit} className="hidden lg:flex items-center relative max-w-xs w-full">
-            <input
-              type="text"
-              placeholder="Track Complaint (e.g. NS-2026-00124)"
-              value={trackInput}
-              onChange={(e) => setTrackInput(e.target.value)}
-              className="w-full bg-slate-100 hover:bg-slate-150 focus:bg-white text-xs text-slate-800 pl-8 pr-16 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-            />
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5" />
-            <button
-              type="submit"
-              className="absolute right-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[11px] font-semibold transition"
-            >
-              Track
-            </button>
+          {/* Quick Track Complaint Bar with Generous Width */}
+          <form onSubmit={handleTrackSubmit} className="hidden md:flex items-center flex-1 max-w-sm mx-4">
+            <div className="relative w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+              <input
+                type="text"
+                placeholder="Track Complaint (e.g. NS-2026-00124)"
+                value={trackInput}
+                onChange={(e) => setTrackInput(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-white border border-[#D4CEBF] rounded-xl text-xs font-semibold focus:outline-none focus:border-[#4A154B] text-[#1D1C1D] shadow-2xs"
+              />
+            </div>
           </form>
 
-          {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-
-              if (item.highlight) {
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => navigateTo(item.id)}
-                    className="ml-2 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl text-xs font-bold shadow-md shadow-blue-600/20 flex items-center gap-1.5 hover:scale-102 transition transform active:scale-98"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>Report Issue</span>
-                  </button>
-                );
-              }
-
+          {/* Desktop Navigation Links with Generous Spacing */}
+          <nav className="hidden lg:flex items-center gap-1.5">
+            {currentLinks.map((link) => {
+              const Icon = link.icon;
+              const isHighlight = (link as any).highlight;
               return (
-                <button
-                  key={item.id}
-                  onClick={() => navigateTo(item.id)}
-                  className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700 font-bold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  className={({ isActive }) =>
+                    `px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold flex items-center gap-1.5 transition ${
+                      isHighlight
+                        ? 'bg-[#007A5A] hover:bg-[#006046] text-white shadow-2xs'
+                        : isActive
+                        ? 'bg-[#EAE8E2] text-[#1D1C1D]'
+                        : 'text-[#4A484A] hover:bg-[#EAE8E2] hover:text-[#1D1C1D]'
+                    }`
+                  }
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                  <span>{item.label}</span>
-                </button>
+                  <Icon className="w-4 h-4" />
+                  <span>{link.label}</span>
+                </NavLink>
               );
             })}
           </nav>
 
-          {/* User Profile Pill / Login Action */}
-          <div className="flex items-center gap-2">
-            {currentRole !== 'public' ? (
-              <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
-                <img
-                  src={currentUser.avatar}
-                  alt={currentUser.name}
-                  className="w-8 h-8 rounded-full object-cover ring-2 ring-slate-200"
-                />
-                <div className="hidden xl:block text-left">
-                  <p className="text-xs font-bold text-slate-800 leading-tight max-w-[130px] truncate">{currentUser.name}</p>
-                  <p className="text-[10px] text-slate-500 capitalize">{currentRole} Account</p>
-                </div>
-                <button
-                  onClick={() => switchRole('public')}
-                  title="Log out"
-                  className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
+          {/* Right Action CTA Button */}
+          <div className="hidden sm:flex items-center gap-3">
+            {location.pathname.startsWith('/admin') && isAdminAuthenticated ? (
               <button
-                onClick={() => navigateTo('login')}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition"
+                type="button"
+                onClick={() => {
+                  logoutAdmin();
+                  navigate('/admin/login');
+                }}
+                className="px-4 py-2.5 rounded-xl text-xs font-extrabold text-[#E01E5A] bg-[#E01E5A]/10 hover:bg-[#E01E5A]/20 border border-[#E01E5A]/30 flex items-center gap-1.5 transition cursor-pointer"
               >
-                Sign In
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Admin Logout</span>
               </button>
+            ) : (
+              <NavLink
+                to="/citizen/report"
+                className="px-5 py-2.5 bg-[#007A5A] hover:bg-[#006046] text-white rounded-xl text-xs sm:text-sm font-black flex items-center gap-2 shadow-xs transition transform hover:-translate-y-0.5 cursor-pointer"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>+ Report Issue</span>
+              </NavLink>
             )}
-
-            {/* Mobile menu trigger */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
-            >
-              {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
           </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-2.5 rounded-xl text-slate-700 hover:bg-[#EAE8E2] border border-[#EAE8E2] bg-white"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-4 space-y-2 shadow-lg">
-          <form onSubmit={handleTrackSubmit} className="flex items-center relative w-full mb-3">
+        <div className="lg:hidden bg-white border-t border-[#EAE8E2] px-6 py-4 space-y-3 shadow-lg">
+          <form onSubmit={handleTrackSubmit} className="mb-3">
             <input
               type="text"
-              placeholder="Track Complaint ID (e.g. NS-2026-00124)"
+              placeholder="Track Complaint ID..."
               value={trackInput}
               onChange={(e) => setTrackInput(e.target.value)}
-              className="w-full bg-slate-100 text-xs pl-8 pr-16 py-2.5 rounded-lg border border-slate-200 focus:outline-none"
+              className="w-full px-3.5 py-2.5 bg-[#F8F6F2] border border-[#D4CEBF] rounded-xl text-xs font-semibold"
             />
-            <Search className="w-4 h-4 text-slate-400 absolute left-2.5" />
-            <button
-              type="submit"
-              className="absolute right-1 px-3 py-1.5 bg-blue-600 text-white rounded text-xs font-bold"
-            >
-              Track
-            </button>
           </form>
-
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  navigateTo(item.id);
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition ${
-                  isActive ? 'bg-blue-50 text-blue-700' : 'text-slate-700 hover:bg-slate-50'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
+          
+          <div className="grid grid-cols-1 gap-1.5">
+            {currentLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={({ isActive }) =>
+                    `px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2.5 ${
+                      isActive ? 'bg-[#EAE8E2] text-[#1D1C1D]' : 'text-slate-700 hover:bg-slate-100'
+                    }`
+                  }
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{link.label}</span>
+                </NavLink>
+              );
+            })}
+          </div>
         </div>
       )}
+
     </header>
   );
 };

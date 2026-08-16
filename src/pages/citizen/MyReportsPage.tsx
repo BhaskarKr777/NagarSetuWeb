@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { IssueStatus } from '../../types';
 import { IssueCard } from '../../components/common/IssueCard';
 import { PlusCircle, Search, Filter, FileText, CheckCircle2, Clock, Wrench } from 'lucide-react';
 
 export const MyReportsPage: React.FC = () => {
-  const { currentUser, issues, navigateTo } = useApp();
+  const navigate = useNavigate();
+  const { currentUser, issues } = useApp();
   const [activeFilter, setActiveFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -47,13 +49,14 @@ export const MyReportsPage: React.FC = () => {
         </div>
 
         <button
-          onClick={() => navigateTo('report-issue')}
-          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition shrink-0"
+          onClick={() => navigate('/citizen/report')}
+          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-2 transition shrink-0"
         >
           <PlusCircle className="w-4 h-4" />
           <span>+ Report New Issue</span>
         </button>
       </div>
+
 
       {/* Filter Tabs & Search Bar */}
       <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs space-y-4">
@@ -104,9 +107,10 @@ export const MyReportsPage: React.FC = () => {
               key={issue.id}
               issue={issue}
               showUpvote={true}
-              onViewDetails={() => navigateTo('report-details', issue.id)}
+              onViewDetails={() => navigate(`/citizen/report/${issue.id}`)}
             />
           ))}
+
         </div>
       ) : (
         <div className="bg-white rounded-2xl p-12 text-center border border-dashed border-slate-300 space-y-3">

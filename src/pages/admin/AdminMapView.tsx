@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { InteractiveMap } from '../../components/common/InteractiveMap';
 import { StatusBadge, PriorityBadge, CategoryBadge } from '../../components/common/StatusBadge';
@@ -15,7 +16,9 @@ import {
 } from 'lucide-react';
 
 export const AdminMapView: React.FC = () => {
-  const { issues, navigateTo, currentRole } = useApp();
+  const navigate = useNavigate();
+  const { issues, currentRole } = useApp();
+
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(issues[0]?.id || null);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedPriority, setSelectedPriority] = useState<string>('All');
@@ -162,13 +165,18 @@ export const AdminMapView: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigateTo(currentRole === 'admin' ? 'admin-issue-details' : 'report-details', issue.id);
+                          if (currentRole === 'admin') {
+                            navigate(`/admin/issues/${issue.id}`);
+                          } else {
+                            navigate(`/citizen/report/${issue.id}`);
+                          }
                         }}
                         className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-0.5"
                       >
                         <span>Inspect</span>
                         <ArrowRight className="w-3 h-3" />
                       </button>
+
                     </div>
                   </div>
                 </div>

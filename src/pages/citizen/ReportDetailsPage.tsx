@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { StatusBadge, PriorityBadge, CategoryBadge } from '../../components/common/StatusBadge';
 import { TimelineVisual } from '../../components/common/TimelineVisual';
@@ -21,9 +22,12 @@ import {
 } from 'lucide-react';
 
 export const ReportDetailsPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { selectedIssueId, getIssueById, navigateTo, submitFeedback, upvoteIssue, currentUser } = useApp();
 
-  const issue = getIssueById(selectedIssueId || 'NS-2026-00124');
+  const issue = getIssueById(id || selectedIssueId || 'NS-2026-00124');
+
 
   // Feedback form state
   const [rating, setRating] = useState<number>(issue?.feedback?.rating || 5);

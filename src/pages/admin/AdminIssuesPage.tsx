@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { StatusBadge, PriorityBadge, CategoryBadge } from '../../components/common/StatusBadge';
 import { 
@@ -16,7 +17,9 @@ import {
 } from 'lucide-react';
 
 export const AdminIssuesPage: React.FC = () => {
-  const { issues, navigateTo } = useApp();
+  const navigate = useNavigate();
+  const { issues } = useApp();
+
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState('');
@@ -212,8 +215,8 @@ export const AdminIssuesPage: React.FC = () => {
                 filteredIssues.map((issue) => (
                   <tr 
                     key={issue.id} 
-                    className="hover:bg-blue-50/40 transition cursor-pointer group"
-                    onClick={() => navigateTo('admin-issue-details', issue.id)}
+                    className="hover:bg-slate-50 transition cursor-pointer group"
+                    onClick={() => navigate(`/admin/issues/${issue.id}`)}
                   >
                     {/* ID */}
                     <td className="py-3.5 pl-4 font-mono font-bold text-blue-700 whitespace-nowrap">
@@ -280,7 +283,7 @@ export const AdminIssuesPage: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigateTo('admin-issue-details', issue.id);
+                          navigate(`/admin/issues/${issue.id}`);
                         }}
                         className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-[11px] transition shadow-2xs inline-flex items-center gap-1"
                       >
@@ -290,6 +293,7 @@ export const AdminIssuesPage: React.FC = () => {
                     </td>
                   </tr>
                 ))
+
               ) : (
                 <tr>
                   <td colSpan={9} className="py-12 text-center text-slate-500">

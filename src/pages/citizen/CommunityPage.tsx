@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { IssueCard } from '../../components/common/IssueCard';
 import { IssueCategory } from '../../types';
@@ -16,7 +17,9 @@ import {
 } from 'lucide-react';
 
 export const CommunityPage: React.FC = () => {
-  const { issues, navigateTo, switchRole } = useApp();
+  const navigate = useNavigate();
+  const { issues, switchRole } = useApp();
+
   
   const [activeTab, setActiveTab] = useState<'Trending' | 'Nearby' | 'New' | 'Resolved'>('Trending');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -85,13 +88,14 @@ export const CommunityPage: React.FC = () => {
         <button
           onClick={() => {
             switchRole('citizen');
-            navigateTo('report-issue');
+            navigate('/citizen/report');
           }}
-          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition shrink-0"
+          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-2 transition shrink-0"
         >
           <PlusCircle className="w-4 h-4" />
           <span>+ Report New Issue</span>
         </button>
+
       </div>
 
       {/* Main Filter & Search Bar */}
@@ -163,9 +167,10 @@ export const CommunityPage: React.FC = () => {
               key={issue.id}
               issue={issue}
               showUpvote={true}
-              onViewDetails={() => navigateTo('report-details', issue.id)}
+              onViewDetails={() => navigate(`/citizen/report/${issue.id}`)}
             />
           ))}
+
         </div>
       ) : (
         <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-slate-300 space-y-3">

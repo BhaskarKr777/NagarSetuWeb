@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { StatusBadge, PriorityBadge, CategoryBadge } from '../../components/common/StatusBadge';
 import { 
@@ -26,21 +27,23 @@ import {
   ShieldCheck, 
   Building2, 
   MapPin,
-  Sparkles
+  Sparkles,
+  Compass
 } from 'lucide-react';
 
 const CATEGORY_COLORS: Record<string, string> = {
-  'Roads': '#f97316',
-  'Garbage': '#84cc16',
-  'Drainage': '#14b8a6',
-  'Water': '#06b6d4',
-  'Streetlight': '#eab308',
-  'Infrastructure': '#8b5cf6',
-  'Other': '#64748b',
+  'Roads': '#4A154B',
+  'Garbage': '#007A5A',
+  'Drainage': '#1264A3',
+  'Water': '#36C5F0',
+  'Streetlight': '#ECB22E',
+  'Infrastructure': '#E01E5A',
+  'Other': '#616061',
 };
 
 export const AdminDashboard: React.FC = () => {
-  const { issues, stats, navigateTo, currentUser } = useApp();
+  const navigate = useNavigate();
+  const { issues, stats, currentUser } = useApp();
 
   // Chart 1: Issues by Category
   const categoryCounts: Record<string, number> = {};
@@ -50,19 +53,19 @@ export const AdminDashboard: React.FC = () => {
   const categoryData = Object.keys(categoryCounts).map((cat) => ({
     name: cat,
     value: categoryCounts[cat],
-    color: CATEGORY_COLORS[cat] || '#3b82f6'
+    color: CATEGORY_COLORS[cat] || '#007A5A'
   }));
 
   // Chart 2: Issues by Status
   const statusData = [
-    { name: 'Reported', count: issues.filter((i) => i.status === 'Reported').length, fill: '#f59e0b' },
-    { name: 'Under Review', count: issues.filter((i) => i.status === 'Under Review').length, fill: '#a855f7' },
-    { name: 'Assigned', count: issues.filter((i) => i.status === 'Assigned').length, fill: '#3b82f6' },
-    { name: 'In Progress', count: issues.filter((i) => i.status === 'In Progress').length, fill: '#6366f1' },
-    { name: 'Resolved', count: issues.filter((i) => i.status === 'Resolved').length, fill: '#10b981' },
+    { name: 'Reported', count: issues.filter((i) => i.status === 'Reported').length, fill: '#ECB22E' },
+    { name: 'Under Review', count: issues.filter((i) => i.status === 'Under Review').length, fill: '#4A154B' },
+    { name: 'Assigned', count: issues.filter((i) => i.status === 'Assigned').length, fill: '#1264A3' },
+    { name: 'In Progress', count: issues.filter((i) => i.status === 'In Progress').length, fill: '#36C5F0' },
+    { name: 'Resolved', count: issues.filter((i) => i.status === 'Resolved').length, fill: '#007A5A' },
   ];
 
-  // Chart 3: Issues Over Time (Weekly trend)
+  // Chart 3: Issues Over Time
   const timelineData = [
     { day: 'Mon', reported: 14, resolved: 11 },
     { day: 'Tue', reported: 22, resolved: 19 },
@@ -73,7 +76,7 @@ export const AdminDashboard: React.FC = () => {
     { day: 'Sun', reported: 12, resolved: 15 },
   ];
 
-  // Chart 4: Department Performance (Resolution Rate %)
+  // Chart 4: Department Caseloads
   const departmentData = [
     { dept: 'Roads & Infra', open: 6, resolved: 18 },
     { dept: 'Sanitation', open: 4, resolved: 22 },
@@ -88,138 +91,144 @@ export const AdminDashboard: React.FC = () => {
     .slice(0, 5);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 bg-[#F8F6F2]">
       
-      {/* Top Header with Municipal Seal */}
-      <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="space-y-2 relative z-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-900 text-blue-300 border border-blue-700 text-xs font-semibold">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Central Municipal Command Control Room • Live Triage</span>
+      {/* Top Header in Slack Aubergine Style */}
+      <div className="bg-[#4A154B] text-white rounded-3xl p-6 sm:p-10 shadow-md flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-3 max-w-xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-purple-100 text-xs font-bold">
+            <span className="text-[#2EB67D]">●</span>
+            <span>Central Municipal Command Console • Live Triage</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Administrator Dashboard
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
+            Administrator Console
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300">
-            Welcome, <span className="font-bold text-white">{currentUser.name}</span>. Real-time civic grievance analytics and departmental SLA monitor.
+          <p className="text-xs sm:text-sm text-purple-100 font-normal">
+            Logged in as <span className="font-bold text-white">{currentUser.name}</span> (ID: admin@nagarsetu.gov.in). Real-time civic grievance analytics and department dispatching.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 relative z-10">
+        <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={() => navigateTo('admin-issues')}
-            className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-2xl shadow-lg shadow-blue-500/25 flex items-center gap-2 transition"
+            type="button"
+            onClick={() => navigate('/admin/issues')}
+            className="px-5 py-3 bg-[#007A5A] hover:bg-[#006046] text-white text-xs sm:text-sm font-black rounded-xl shadow-xs flex items-center gap-2 transition cursor-pointer"
           >
             <Layers className="w-4 h-4" />
-            <span>Manage All Issues ({issues.length})</span>
+            <span>All Issues Table ({issues.length})</span>
           </button>
 
           <button
-            onClick={() => navigateTo('admin-map')}
-            className="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-2xl border border-slate-700 transition flex items-center gap-2"
+            type="button"
+            onClick={() => navigate('/admin/map')}
+            className="px-5 py-3 bg-white/10 hover:bg-white/20 text-white text-xs sm:text-sm font-black rounded-xl border border-white/25 transition flex items-center gap-2 cursor-pointer"
           >
-            <MapPin className="w-4 h-4 text-emerald-400" />
-            <span>Live Spatial Map</span>
+            <MapPin className="w-4 h-4 text-[#2EB67D]" />
+            <span>GIS Map View</span>
           </button>
         </div>
-
-        <div className="absolute right-0 top-0 -bottom-10 w-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
       </div>
 
-      {/* 6 Top Metric KPI Cards */}
+      {/* 6 Steady Solid KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         
-        {/* Total Issues */}
         <div 
-          onClick={() => navigateTo('admin-issues')}
-          className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md transition cursor-pointer"
+          onClick={() => navigate('/admin/issues')}
+          className="bg-white p-5 rounded-2xl border border-[#EAE8E2] shadow-xs hover:border-[#4A154B] transition cursor-pointer"
         >
           <div className="flex items-center justify-between text-slate-500 mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider">Total</span>
-            <Layers className="w-4 h-4 text-blue-600" />
+            <div className="w-7 h-7 rounded-lg bg-[#4A154B]/10 text-[#4A154B] flex items-center justify-center font-bold">
+              <Layers className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <p className="text-2xl font-extrabold text-slate-900">{stats.total}</p>
-          <span className="text-[10px] text-slate-400 font-medium">All logged tickets</span>
+          <p className="text-2xl font-black text-[#1D1C1D]">{stats.total}</p>
+          <span className="text-[10px] text-[#616061] font-semibold">All tickets</span>
         </div>
 
-        {/* Pending */}
         <div 
-          onClick={() => navigateTo('admin-issues')}
-          className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md transition cursor-pointer"
+          onClick={() => navigate('/admin/issues')}
+          className="bg-white p-5 rounded-2xl border border-[#EAE8E2] shadow-xs hover:border-[#ECB22E] transition cursor-pointer"
         >
-          <div className="flex items-center justify-between text-amber-600 mb-1">
+          <div className="flex items-center justify-between text-[#9E6A00] mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider">Pending</span>
-            <Clock className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-[#ECB22E]/20 text-[#9E6A00] flex items-center justify-center font-bold">
+              <Clock className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <p className="text-2xl font-extrabold text-amber-700">{stats.pending}</p>
-          <span className="text-[10px] text-slate-400 font-medium">Awaiting assignment</span>
+          <p className="text-2xl font-black text-[#9E6A00]">{stats.pending}</p>
+          <span className="text-[10px] text-[#616061] font-semibold">Unassigned</span>
         </div>
 
-        {/* In Progress */}
         <div 
-          onClick={() => navigateTo('admin-issues')}
-          className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md transition cursor-pointer"
+          onClick={() => navigate('/admin/issues')}
+          className="bg-white p-5 rounded-2xl border border-[#EAE8E2] shadow-xs hover:border-[#1264A3] transition cursor-pointer"
         >
-          <div className="flex items-center justify-between text-indigo-600 mb-1">
+          <div className="flex items-center justify-between text-[#1264A3] mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider">In Progress</span>
-            <Wrench className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-[#1264A3]/10 text-[#1264A3] flex items-center justify-center font-bold">
+              <Wrench className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <p className="text-2xl font-extrabold text-indigo-700">{stats.inProgress}</p>
-          <span className="text-[10px] text-slate-400 font-medium">On-site resolution</span>
+          <p className="text-2xl font-black text-[#1264A3]">{stats.inProgress}</p>
+          <span className="text-[10px] text-[#616061] font-semibold">Active on site</span>
         </div>
 
-        {/* Resolved */}
         <div 
-          onClick={() => navigateTo('admin-issues')}
-          className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md transition cursor-pointer"
+          onClick={() => navigate('/admin/issues')}
+          className="bg-white p-5 rounded-2xl border border-[#EAE8E2] shadow-xs hover:border-[#007A5A] transition cursor-pointer"
         >
-          <div className="flex items-center justify-between text-emerald-600 mb-1">
+          <div className="flex items-center justify-between text-[#007A5A] mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider">Resolved</span>
-            <CheckCircle2 className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-[#007A5A]/10 text-[#007A5A] flex items-center justify-center font-bold">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <p className="text-2xl font-extrabold text-emerald-700">{stats.resolved}</p>
-          <span className="text-[10px] text-slate-400 font-medium">{stats.resolutionRate}% Rate</span>
+          <p className="text-2xl font-black text-[#007A5A]">{stats.resolved}</p>
+          <span className="text-[10px] text-[#616061] font-semibold">{stats.resolutionRate}% Rate</span>
         </div>
 
-        {/* High Priority */}
         <div 
-          onClick={() => navigateTo('admin-issues')}
-          className="bg-red-50/70 p-4 rounded-2xl border border-red-200 shadow-xs hover:shadow-md transition cursor-pointer"
+          onClick={() => navigate('/admin/issues')}
+          className="bg-white p-5 rounded-2xl border border-[#EAE8E2] shadow-xs hover:border-[#E01E5A] transition cursor-pointer"
         >
-          <div className="flex items-center justify-between text-red-700 mb-1">
+          <div className="flex items-center justify-between text-[#E01E5A] mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider">High Priority</span>
-            <Flame className="w-4 h-4 text-red-600 animate-pulse" />
+            <div className="w-7 h-7 rounded-lg bg-[#E01E5A]/10 text-[#E01E5A] flex items-center justify-center font-bold">
+              <Flame className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <p className="text-2xl font-extrabold text-red-700">{stats.highPriority}</p>
-          <span className="text-[10px] text-red-600 font-semibold">Immediate attention</span>
+          <p className="text-2xl font-black text-[#E01E5A]">{stats.highPriority}</p>
+          <span className="text-[10px] text-[#E01E5A] font-semibold">&lt; 24h SLA</span>
         </div>
 
-        {/* SLA Breached */}
         <div 
-          onClick={() => navigateTo('admin-issues')}
-          className="bg-amber-50/70 p-4 rounded-2xl border border-amber-200 shadow-xs hover:shadow-md transition cursor-pointer"
+          onClick={() => navigate('/admin/issues')}
+          className="bg-white p-5 rounded-2xl border border-[#EAE8E2] shadow-xs hover:border-[#ECB22E] transition cursor-pointer"
         >
-          <div className="flex items-center justify-between text-amber-800 mb-1">
+          <div className="flex items-center justify-between text-[#ECB22E] mb-1">
             <span className="text-[11px] font-bold uppercase tracking-wider">SLA Breached</span>
-            <AlertOctagon className="w-4 h-4 text-amber-600" />
+            <div className="w-7 h-7 rounded-lg bg-[#ECB22E]/20 text-[#ECB22E] flex items-center justify-center font-bold">
+              <AlertOctagon className="w-3.5 h-3.5" />
+            </div>
           </div>
-          <p className="text-2xl font-extrabold text-amber-800">{stats.slaBreached}</p>
-          <span className="text-[10px] text-amber-700 font-medium">Overdue &gt; 48 hrs</span>
+          <p className="text-2xl font-black text-[#9E6A00]">{stats.slaBreached}</p>
+          <span className="text-[10px] text-[#616061] font-semibold">Escalated</span>
         </div>
 
       </div>
 
-      {/* 4 In-Depth Interactive Charts Grid */}
+      {/* 4 Interactive Visual Charts in Slack Theme */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Chart 1: Issues by Category */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+        <div className="bg-white p-6 rounded-3xl border border-[#EAE8E2] shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-extrabold text-slate-900">Issues by Civic Category</h3>
-              <p className="text-[11px] text-slate-500">Distribution across municipal service areas</p>
+              <h3 className="text-base font-black text-[#1D1C1D]">Issues by Category</h3>
+              <p className="text-xs text-[#616061]">Distribution across municipal wings</p>
             </div>
-            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">
+            <span className="text-xs font-bold text-[#4A154B] bg-[#4A154B]/10 px-2.5 py-0.5 rounded-full">
               {categoryData.length} Categories
             </span>
           </div>
@@ -232,7 +241,7 @@ export const AdminDashboard: React.FC = () => {
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
-                  outerRadius={90}
+                  outerRadius={85}
                   paddingAngle={4}
                   dataKey="value"
                   label={({ name, percent }) => `${name} (${((percent || 0) * 100).toFixed(0)}%)`}
@@ -248,13 +257,13 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Chart 2: Issues by Status */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+        <div className="bg-white p-6 rounded-3xl border border-[#EAE8E2] shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-extrabold text-slate-900">Grievance Status Pipeline</h3>
-              <p className="text-[11px] text-slate-500">Active tickets count across resolution lifecycle</p>
+              <h3 className="text-base font-black text-[#1D1C1D]">Status Pipeline</h3>
+              <p className="text-xs text-[#616061]">Tickets count across resolution stages</p>
             </div>
-            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
+            <span className="text-xs font-bold text-[#007A5A] bg-[#007A5A]/10 px-2.5 py-0.5 rounded-full">
               {stats.resolved} Resolved
             </span>
           </div>
@@ -262,7 +271,7 @@ export const AdminDashboard: React.FC = () => {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={statusData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
                 <Bar dataKey="count" radius={[6, 6, 0, 0]}>
@@ -275,19 +284,19 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Chart 3: Weekly Trend Over Time */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+        {/* Chart 3: Weekly Intake vs Resolution */}
+        <div className="bg-white p-6 rounded-3xl border border-[#EAE8E2] shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-extrabold text-slate-900">Weekly Intake vs Resolution</h3>
-              <p className="text-[11px] text-slate-500">Volume of reported complaints vs resolved works</p>
+              <h3 className="text-base font-black text-[#1D1C1D]">Weekly Intake vs Resolution</h3>
+              <p className="text-xs text-[#616061]">Volume of reported vs resolved works</p>
             </div>
-            <div className="flex items-center gap-3 text-xs font-semibold">
-              <span className="flex items-center gap-1 text-blue-600">
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block" /> Reported
+            <div className="flex items-center gap-3 text-xs font-bold">
+              <span className="flex items-center gap-1 text-[#1264A3]">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#1264A3] inline-block" /> Reported
               </span>
-              <span className="flex items-center gap-1 text-emerald-600">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> Resolved
+              <span className="flex items-center gap-1 text-[#007A5A]">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#007A5A] inline-block" /> Resolved
               </span>
             </div>
           </div>
@@ -295,36 +304,27 @@ export const AdminDashboard: React.FC = () => {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={timelineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorReported" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                  </linearGradient>
-                  <linearGradient id="colorResolved" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                <XAxis dataKey="day" tick={{ fontSize: 11, fontWeight: 700 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip />
-                <Area type="monotone" dataKey="reported" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorReported)" />
-                <Area type="monotone" dataKey="resolved" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorResolved)" />
+                <Area type="monotone" dataKey="reported" stroke="#1264A3" strokeWidth={2.5} fill="#E8F5FA" />
+                <Area type="monotone" dataKey="resolved" stroke="#007A5A" strokeWidth={2.5} fill="#E6F4EA" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Chart 4: Department Performance */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+        {/* Chart 4: Department Workloads */}
+        <div className="bg-white p-6 rounded-3xl border border-[#EAE8E2] shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-extrabold text-slate-900">Department Workloads</h3>
-              <p className="text-[11px] text-slate-500">Active open tasks vs completed resolutions</p>
+              <h3 className="text-base font-black text-[#1D1C1D]">Department Workloads</h3>
+              <p className="text-xs text-[#616061]">Active open tasks vs completed resolutions</p>
             </div>
             <button
-              onClick={() => navigateTo('admin-departments')}
-              className="text-xs font-bold text-blue-600 hover:underline"
+              type="button"
+              onClick={() => navigate('/admin/departments')}
+              className="text-xs font-bold text-[#007A5A] hover:underline"
             >
               View Roster →
             </button>
@@ -334,10 +334,10 @@ export const AdminDashboard: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={departmentData} layout="vertical" margin={{ top: 5, right: 10, left: 30, bottom: 5 }}>
                 <XAxis type="number" tick={{ fontSize: 11 }} />
-                <YAxis type="category" dataKey="dept" tick={{ fontSize: 11 }} width={90} />
+                <YAxis type="category" dataKey="dept" tick={{ fontSize: 11, fontWeight: 700 }} width={95} />
                 <Tooltip />
-                <Bar dataKey="resolved" fill="#10b981" name="Resolved" radius={[0, 4, 4, 0]} />
-                <Bar dataKey="open" fill="#f59e0b" name="Open Tickets" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="resolved" fill="#007A5A" name="Resolved" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="open" fill="#ECB22E" name="Open Tickets" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -345,21 +345,24 @@ export const AdminDashboard: React.FC = () => {
 
       </div>
 
-      {/* Urgent / High Priority Triage Table */}
-      <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+      {/* Urgent High-Priority Triage Queue */}
+      <div className="bg-white rounded-3xl p-6 border border-[#EAE8E2] shadow-xs space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Flame className="w-5 h-5 text-red-600" />
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#E01E5A]/10 text-[#E01E5A] flex items-center justify-center font-bold">
+              <Flame className="w-5 h-5" />
+            </div>
             <div>
-              <h3 className="text-base font-extrabold text-slate-900">Urgent High-Priority Triage Queue</h3>
-              <p className="text-xs text-slate-500">Grievances requiring immediate department assignment or escalation</p>
+              <h3 className="text-base font-black text-[#1D1C1D]">Urgent High-Priority Triage Queue</h3>
+              <p className="text-xs text-[#616061]">Grievances requiring immediate department assignment</p>
             </div>
           </div>
           <button
-            onClick={() => navigateTo('admin-issues')}
-            className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+            type="button"
+            onClick={() => navigate('/admin/issues')}
+            className="text-xs font-bold text-[#007A5A] hover:underline flex items-center gap-1"
           >
-            <span>View Full Issues Table ({issues.length})</span>
+            <span>View All ({issues.length})</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -367,32 +370,40 @@ export const AdminDashboard: React.FC = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
-                <th className="pb-3 pl-2">ID</th>
-                <th className="pb-3">Issue Title & Location</th>
-                <th className="pb-3">Category</th>
-                <th className="pb-3">Ward</th>
-                <th className="pb-3">Status</th>
-                <th className="pb-3">Department</th>
-                <th className="pb-3 text-right pr-2">Action</th>
+              <tr className="border-b border-[#EAE8E2] text-[#616061] font-bold uppercase tracking-wider bg-[#F8F6F2]">
+                <th className="py-3.5 pl-3">ID</th>
+                <th className="py-3.5">Issue Title</th>
+                <th className="py-3.5">Category</th>
+                <th className="py-3.5">Ward</th>
+                <th className="py-3.5">Status</th>
+                <th className="py-3.5">Department</th>
+                <th className="py-3.5 text-right pr-3">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-[#F0EDE6] font-medium">
               {urgentIssues.map((issue) => (
-                <tr key={issue.id} className="hover:bg-slate-50 transition">
-                  <td className="py-3.5 pl-2 font-mono font-bold text-blue-700">{issue.id}</td>
+                <tr 
+                  key={issue.id} 
+                  className="hover:bg-[#F8F6F2] transition cursor-pointer" 
+                  onClick={() => navigate(`/admin/issues/${issue.id}`)}
+                >
+                  <td className="py-3.5 pl-3 font-mono font-bold text-[#4A154B]">{issue.id}</td>
                   <td className="py-3.5 max-w-xs">
-                    <p className="font-bold text-slate-900 truncate">{issue.title}</p>
-                    <p className="text-[11px] text-slate-500 truncate">{issue.location.address}</p>
+                    <p className="font-bold text-[#1D1C1D] truncate">{issue.title}</p>
+                    <p className="text-[11px] text-[#616061] truncate">{issue.location.address}</p>
                   </td>
                   <td className="py-3.5"><CategoryBadge category={issue.category} /></td>
-                  <td className="py-3.5 text-slate-700 font-medium">{issue.location.ward.split('-')[0]}</td>
+                  <td className="py-3.5 text-[#1D1C1D] font-semibold">{issue.location.ward.split('-')[0]}</td>
                   <td className="py-3.5"><StatusBadge status={issue.status} size="sm" /></td>
-                  <td className="py-3.5 text-slate-700 font-medium">{issue.department || <span className="text-amber-600 font-bold">Unassigned</span>}</td>
-                  <td className="py-3.5 text-right pr-2">
+                  <td className="py-3.5 text-[#1D1C1D]">{issue.department || <span className="text-[#E01E5A] font-bold">Unassigned</span>}</td>
+                  <td className="py-3.5 text-right pr-3">
                     <button
-                      onClick={() => navigateTo('admin-issue-details', issue.id)}
-                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-[11px] transition shadow-2xs"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/admin/issues/${issue.id}`);
+                      }}
+                      className="px-3.5 py-1.5 bg-[#007A5A] hover:bg-[#006046] text-white rounded-lg font-bold text-[11px] transition shadow-2xs cursor-pointer"
                     >
                       Triage / Assign →
                     </button>

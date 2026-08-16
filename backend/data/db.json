@@ -1,6 +1,61 @@
 {
   "issues": [
     {
+      "id": "NS-2026-00131",
+      "title": "afcafadfa",
+      "description": "awdadx",
+      "category": "Garbage",
+      "priority": "High",
+      "status": "Assigned",
+      "location": {
+        "address": "GPS Location (26.7344, 88.4186)",
+        "ward": "Ward 14 - Indiranagar",
+        "city": "Bengaluru",
+        "lat": 26.707481215214123,
+        "lng": 88.42108011245729,
+        "landmark": "Opposite Costa Coffee"
+      },
+      "imageUrl": "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=800&auto=format&fit=crop&q=80",
+      "citizenName": "Aarav Sharma",
+      "citizenPhone": "+91 98450 11223",
+      "citizenEmail": "aarav.sharma@gmail.com",
+      "citizenId": "usr-citizen-01",
+      "createdAt": "2026-08-16T06:48:27.801Z",
+      "updatedAt": "2026-08-16T06:51:12.101Z",
+      "upvotes": 1,
+      "upvotedBy": [
+        "usr-citizen-01"
+      ],
+      "slaDeadline": "2026-08-17T06:48:27.802Z",
+      "isSlaBreached": false,
+      "timeline": [
+        {
+          "status": "Reported",
+          "label": "Report Submitted by Citizen",
+          "date": "16 Aug 2026, 12:18 pm",
+          "actor": "Aarav Sharma"
+        },
+        {
+          "status": "Assigned",
+          "label": "Assigned to Roads & Infrastructure",
+          "date": "16 Aug 2026, 12:21 pm",
+          "actor": "Shreya Deshmukh, IAS",
+          "notes": "Assigned to Field Officer: Ramesh Kumar (Senior Road Maintenance Lead)"
+        }
+      ],
+      "internalNotes": [],
+      "department": "Roads & Infrastructure",
+      "assignedStaff": {
+        "id": "staff-1",
+        "name": "Ramesh Kumar",
+        "phone": "+91 98765 43210",
+        "department": "Roads & Infrastructure",
+        "role": "Senior Road Maintenance Lead",
+        "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+        "activeTasks": 3
+      }
+    },
+    {
       "id": "NS-2026-00130",
       "title": "Hazardous Deep Pothole on Main Road",
       "description": "Large crater causing severe traffic slowdown and hazard for two-wheelers.",

@@ -1,49 +1,44 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { User, ShieldCheck, HardHat, Lock, Mail, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const { switchRole, navigateTo, showNotification } = useApp();
+  const navigate = useNavigate();
+  const { switchRole, showNotification } = useApp();
   const [email, setEmail] = useState('citizen.demo@nagarsetu.gov.in');
   const [password, setPassword] = useState('password123');
 
   const handleCustomSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Default to citizen if custom submit
     switchRole('citizen');
-    showNotification('Logged in successfully as Citizen!', 'success');
+    showNotification('Logged in successfully as Citizen (Aarav Sharma)', 'success');
+    navigate('/citizen/dashboard');
   };
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-50">
-      <div className="max-w-md w-full space-y-8">
+      <div className="max-w-md w-full space-y-6">
         
         {/* Header */}
-        <div className="text-center">
-          <div className="mx-auto w-14 h-14 bg-gradient-to-tr from-blue-700 to-blue-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20 mb-4">
-            <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" />
-              <path d="M2 17l10 5 10-5" />
-              <path d="M2 12l10 5 10-5" />
-            </svg>
+        <div className="text-center space-y-2">
+          <div className="mx-auto w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-md font-bold text-xl">
+            न
           </div>
-          <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-            Welcome to <span className="text-blue-600">NagarSetu</span>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Sign In to <span className="text-blue-600">NagarSetu</span>
           </h2>
-          <p className="mt-2 text-xs text-slate-600 max-w-sm mx-auto">
-            Choose a quick demo persona or sign in to access the civic portal.
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            Choose your portal persona or sign in with your citizen credentials.
           </p>
         </div>
 
         {/* 1-Click Demo Profiles Box */}
-        <div className="bg-white rounded-2xl p-6 border border-blue-200 shadow-md shadow-blue-500/5 space-y-3">
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-              1-Click Demo Sign-In
-            </span>
-            <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-              No backend required
+              <span>Select Demo Portal:</span>
             </span>
           </div>
 
@@ -51,122 +46,123 @@ export const LoginPage: React.FC = () => {
             
             {/* Citizen Button */}
             <button
-              onClick={() => switchRole('citizen')}
-              className="w-full flex items-center justify-between p-3.5 rounded-xl border border-slate-200 hover:border-blue-500 bg-slate-50/70 hover:bg-blue-50/50 transition text-left group"
+              type="button"
+              onClick={() => {
+                switchRole('citizen');
+                navigate('/citizen/dashboard');
+              }}
+              className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-blue-500 bg-slate-50 hover:bg-blue-50 transition text-left group cursor-pointer"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
                   <User className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-900 group-hover:text-blue-700">Continue as Citizen</p>
-                  <p className="text-[11px] text-slate-500">Aarav Sharma • Ward 14 Indiranagar</p>
+                  <h4 className="text-xs font-extrabold text-slate-900 group-hover:text-blue-700">
+                    Citizen Portal (Aarav Sharma)
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Ward 14 • Indiranagar • Report & track civic issues
+                  </p>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-transform" />
             </button>
 
-            {/* Admin Button */}
+            {/* Admin Login Button (Redirects to Admin ID/Pass Login) */}
             <button
-              onClick={() => switchRole('admin')}
-              className="w-full flex items-center justify-between p-3.5 rounded-xl border border-slate-200 hover:border-indigo-500 bg-slate-50/70 hover:bg-indigo-50/50 transition text-left group"
+              type="button"
+              onClick={() => navigate('/admin/login')}
+              className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-blue-500 bg-slate-50 hover:bg-blue-50 transition text-left group cursor-pointer"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-900 group-hover:text-indigo-700">Continue as Admin</p>
-                  <p className="text-[11px] text-slate-500">Shreya Deshmukh, IAS • Municipal HQ</p>
+                  <h4 className="text-xs font-extrabold text-slate-900 group-hover:text-blue-700 flex items-center gap-1.5">
+                    <span>Municipal Admin Portal</span>
+                    <span className="text-[10px] px-1.5 py-0.2 bg-blue-100 text-blue-800 rounded font-bold">Requires Login</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    ID & Password Authentication • Central Command
+                  </p>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-transform" />
             </button>
 
             {/* Field Staff Button */}
             <button
-              onClick={() => switchRole('staff')}
-              className="w-full flex items-center justify-between p-3.5 rounded-xl border border-slate-200 hover:border-amber-500 bg-slate-50/70 hover:bg-amber-50/50 transition text-left group"
+              type="button"
+              onClick={() => {
+                switchRole('staff');
+                navigate('/staff/dashboard');
+              }}
+              className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:border-blue-500 bg-slate-50 hover:bg-blue-50 transition text-left group cursor-pointer"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
                   <HardHat className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-900 group-hover:text-amber-700">Continue as Field Staff</p>
-                  <p className="text-[11px] text-slate-500">Ramesh Kumar • Roads & Infra Crew</p>
+                  <h4 className="text-xs font-extrabold text-slate-900 group-hover:text-blue-700">
+                    Field Staff (Ramesh Kumar)
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Roads & Infra Team • On-site repair & photo proof
+                  </p>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-transform" />
             </button>
 
           </div>
         </div>
 
-        {/* Divider */}
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-slate-50 px-3 text-slate-500 font-semibold">Or Sign In with Email</span>
-          </div>
-        </div>
+        {/* Regular Sign-In Form for Citizens */}
+        <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+          <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            Citizen Email Sign-In
+          </h3>
 
-        {/* Traditional Form */}
-        <form onSubmit={handleCustomSubmit} className="bg-white rounded-2xl p-6 border border-slate-200/90 shadow-xs space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Official Email or Mobile</label>
-            <div className="relative">
-              <input
-                type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-                placeholder="name@domain.com"
-                required
-              />
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          <form onSubmit={handleCustomSubmit} className="space-y-3.5">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-slate-700">Email Address</label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none focus:bg-white focus:border-blue-600"
+                />
+              </div>
             </div>
-          </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-1">
+            <div className="space-y-1">
               <label className="text-xs font-bold text-slate-700">Password</label>
-              <a href="#forgot" onClick={(e) => { e.preventDefault(); showNotification('Demo password is password123', 'info'); }} className="text-[11px] text-blue-600 hover:underline">
-                Forgot password?
-              </a>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold focus:outline-none focus:bg-white focus:border-blue-600"
+                />
+              </div>
             </div>
-            <div className="relative">
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-                required
-              />
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-            </div>
-          </div>
 
-          <button
-            type="submit"
-            className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 transition"
-          >
-            Sign In to Dashboard
-          </button>
-
-          <p className="text-center text-xs text-slate-500 pt-1">
-            Don't have an account?{' '}
             <button
-              type="button"
-              onClick={() => navigateTo('register')}
-              className="text-blue-600 font-bold hover:underline"
+              type="submit"
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm transition"
             >
-              Register Citizen Profile
+              Continue to Citizen Dashboard →
             </button>
-          </p>
-        </form>
+          </form>
+        </div>
 
       </div>
     </div>

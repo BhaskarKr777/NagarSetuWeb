@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { StatusBadge, PriorityBadge, CategoryBadge } from '../../components/common/StatusBadge';
 import { 
@@ -15,7 +16,8 @@ import {
 } from 'lucide-react';
 
 export const StaffDashboard: React.FC = () => {
-  const { currentUser, issues, navigateTo, updateIssueStatus } = useApp();
+  const navigate = useNavigate();
+  const { currentUser, issues, updateIssueStatus } = useApp();
   const [activeTab, setActiveTab] = useState<'All' | 'Assigned' | 'In Progress' | 'Resolved'>('All');
 
   // Filter tasks assigned to current staff (or default road department tasks)
@@ -34,33 +36,34 @@ export const StaffDashboard: React.FC = () => {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-amber-700 via-amber-800 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+      {/* Header Banner with Solid Theme */}
+      <div className="bg-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6 border border-slate-800">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-600/60 border border-amber-400/30 text-amber-200 text-xs font-semibold">
+          <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-800 text-xs font-bold">
             <HardHat className="w-3.5 h-3.5" />
             <span>Field Dispatch Terminal • On-Ground Operations</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
             Field Officer: {currentUser.name}
           </h1>
-          <p className="text-xs sm:text-sm text-amber-100">
+          <p className="text-xs sm:text-sm text-slate-300">
             Roads & Infrastructure Maintenance Crew • Zone 4 East
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigateTo('admin-map')}
-            className="px-5 py-3 bg-white/15 hover:bg-white/25 text-white text-xs font-bold rounded-2xl border border-white/20 backdrop-blur-xs transition flex items-center gap-2"
+            onClick={() => navigate('/admin/map')}
+            className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-700 transition flex items-center gap-2"
           >
             <MapPin className="w-4 h-4 text-emerald-400" />
             <span>View Task Navigation Map</span>
           </button>
         </div>
       </div>
+
 
       {/* 4 Metric KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -171,12 +174,13 @@ export const StaffDashboard: React.FC = () => {
               )}
 
               <button
-                onClick={() => navigateTo('staff-task-details', task.id)}
+                onClick={() => navigate(`/staff/task/${task.id}`)}
                 className="ml-auto px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold transition flex items-center gap-1"
               >
                 <span>Task Action</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
+
             </div>
 
           </div>

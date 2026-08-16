@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { IssueCategory, IssuePriority } from '../../types';
 import { MOCK_SAMPLE_PHOTOS } from '../../data/mockData';
@@ -21,7 +22,9 @@ import {
 } from 'lucide-react';
 
 export const ReportIssuePage: React.FC = () => {
-  const { createIssue, navigateTo, currentUser } = useApp();
+  const navigate = useNavigate();
+  const { createIssue, currentUser } = useApp();
+
 
   // Form State
   const [title, setTitle] = useState('');
@@ -179,20 +182,21 @@ export const ReportIssuePage: React.FC = () => {
           {/* Action buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
-              onClick={() => navigateTo('report-details', submittedIssueId)}
-              className="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 transition flex items-center justify-center gap-2"
+              onClick={() => navigate(`/citizen/report/${submittedIssueId}`)}
+              className="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center justify-center gap-2"
             >
               <span>View Report Details & Timeline</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
             <button
-              onClick={() => navigateTo('my-reports')}
+              onClick={() => navigate('/citizen/my-reports')}
               className="w-full sm:w-auto px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition"
             >
               Go to My Reports
             </button>
           </div>
+
 
           <p className="text-[11px] text-slate-400">
             You will receive instant SMS & WhatsApp updates as the field officer progresses with resolution.

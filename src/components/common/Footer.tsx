@@ -1,155 +1,181 @@
 import React from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
-import { PhoneCall, ShieldAlert, Sparkles, RefreshCw, Heart, ExternalLink, CheckCircle } from 'lucide-react';
+import { 
+  Building2, 
+  ShieldCheck, 
+  MapPin, 
+  Phone, 
+  Mail, 
+  Heart, 
+  PlusCircle, 
+  ExternalLink, 
+  FileText,
+  Users,
+  HardHat,
+  Lock
+} from 'lucide-react';
 
 export const Footer: React.FC = () => {
-  const { navigateTo, switchRole, resetToMockData } = useApp();
+  const navigate = useNavigate();
+  const { switchRole } = useApp();
 
   return (
-    <footer className="bg-slate-900 text-slate-400 border-t border-slate-800 text-sm">
-      {/* Emergency & Municipal Helplines Banner */}
-      <div className="bg-slate-950 border-b border-slate-800/80 py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-white">
-            <PhoneCall className="w-4 h-4 text-emerald-400" />
-            <span className="font-semibold text-xs uppercase tracking-wider text-slate-300">24/7 Civic Helpline Directory:</span>
-          </div>
+    <footer className="mt-20 bg-white border-t border-[#EAE8E2] text-[#1D1C1D]">
+      
+      {/* Main Footer Container with Generous Padding */}
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-16 pb-12 space-y-12">
+        
+        {/* 4 Column Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           
-          <div className="flex flex-wrap items-center gap-4 text-xs">
-            <div className="flex items-center gap-1.5 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
-              <span className="text-emerald-400 font-bold">1916</span>
-              <span className="text-slate-400">Swachhata / Garbage</span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
-              <span className="text-amber-400 font-bold">1912</span>
-              <span className="text-slate-400">Power & Streetlights</span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
-              <span className="text-blue-400 font-bold">1913</span>
-              <span className="text-slate-400">Roads & Water Supply</span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800">
-              <span className="text-red-400 font-bold">112</span>
-              <span className="text-slate-400">Disaster Emergency</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Footer Links */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          
-          {/* Brand Col */}
-          <div className="space-y-4">
+          {/* Column 1: Brand & Mission (Spans 2 cols) */}
+          <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">
-                NS
+              <div className="w-10 h-10 rounded-2xl bg-[#4A154B] text-white flex items-center justify-center font-black text-2xl shadow-xs">
+                #
               </div>
-              <span className="text-lg font-extrabold text-white">NagarSetu</span>
+              <div className="flex items-center gap-1">
+                <span className="text-2xl font-black tracking-tight text-[#1D1C1D]">
+                  NagarSetu
+                </span>
+                <span className="text-[#E01E5A] font-serif font-black text-2xl leading-none">*</span>
+              </div>
             </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Empowering citizens with seamless municipal transparency. Crowdsourced issue reporting, automated departmental triage, and rapid ground resolution.
+
+            <p className="text-xs sm:text-sm text-[#616061] leading-relaxed max-w-sm font-medium">
+              Crowdsourced Civic Issue Reporting & Real-Time Municipal Resolution Platform. Connecting citizens, ward officers, and on-ground repair crews for cleaner, safer, and smarter cities.
             </p>
-            <div className="pt-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-950 text-blue-400 border border-blue-800">
-                <CheckCircle className="w-3.5 h-3.5 text-blue-400" />
-                Smart City Civic Tech Initiative
+
+            <div className="flex items-center gap-2 pt-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#007A5A]/10 text-[#007A5A] text-xs font-bold border border-[#007A5A]/20">
+                <span className="w-2 h-2 rounded-full bg-[#2EB67D] animate-pulse" />
+                <span>Smart India Hackathon 2026</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#4A154B]/10 text-[#4A154B] text-xs font-bold border border-[#4A154B]/20">
+                <span>Digital India Initiative</span>
               </span>
             </div>
           </div>
 
-          {/* Quick Access */}
-          <div>
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">Citizen Services</h4>
-            <ul className="space-y-2 text-xs">
+          {/* Column 2: Citizen Portals */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#1D1C1D]">
+              Citizen Portals
+            </h4>
+            <ul className="space-y-2 text-xs font-semibold text-[#616061]">
               <li>
-                <button onClick={() => { switchRole('citizen'); navigateTo('report-issue'); }} className="hover:text-white transition">
-                  • Report Pothole or Road Damage
-                </button>
+                <NavLink to="/citizen/dashboard" className="hover:text-[#4A154B] transition-colors">
+                  Citizen Dashboard
+                </NavLink>
               </li>
               <li>
-                <button onClick={() => { switchRole('citizen'); navigateTo('report-issue'); }} className="hover:text-white transition">
-                  • Report Garbage & Sanitation Issue
-                </button>
+                <NavLink to="/citizen/report" className="hover:text-[#4A154B] text-[#007A5A] font-bold transition-colors flex items-center gap-1">
+                  <span>+ Report Civic Issue</span>
+                </NavLink>
               </li>
               <li>
-                <button onClick={() => { switchRole('citizen'); navigateTo('report-issue'); }} className="hover:text-white transition">
-                  • Report Water Leakage & Burst
-                </button>
+                <NavLink to="/citizen/my-reports" className="hover:text-[#4A154B] transition-colors">
+                  My Submitted Complaints
+                </NavLink>
               </li>
               <li>
-                <button onClick={() => { switchRole('citizen'); navigateTo('my-reports'); }} className="hover:text-white transition">
-                  • Track Existing Grievance
-                </button>
+                <NavLink to="/community" className="hover:text-[#4A154B] transition-colors">
+                  Public Community Feed
+                </NavLink>
               </li>
               <li>
-                <button onClick={() => navigateTo('community')} className="hover:text-white transition">
-                  • Community Issues Feed
-                </button>
-              </li>
-            </ul>
-          </div>
-
-          {/* Municipal Administration */}
-          <div>
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">Municipal Portals</h4>
-            <ul className="space-y-2 text-xs">
-              <li>
-                <button onClick={() => switchRole('admin')} className="hover:text-white transition flex items-center gap-1">
-                  <span>• Administrator Control Room</span>
-                </button>
-              </li>
-              <li>
-                <button onClick={() => { switchRole('admin'); navigateTo('admin-issues'); }} className="hover:text-white transition">
-                  • Grievance Triage Table
-                </button>
-              </li>
-              <li>
-                <button onClick={() => { switchRole('admin'); navigateTo('admin-map'); }} className="hover:text-white transition">
-                  • Live Spatial Ward Map
-                </button>
-              </li>
-              <li>
-                <button onClick={() => { switchRole('admin'); navigateTo('admin-analytics'); }} className="hover:text-white transition">
-                  • SLA & Turnaround Analytics
-                </button>
-              </li>
-              <li>
-                <button onClick={() => switchRole('staff')} className="hover:text-white transition">
-                  • Field Staff Dispatch App
-                </button>
+                <NavLink to="/citizen/profile" className="hover:text-[#4A154B] transition-colors">
+                  Citizen Karma & Badges
+                </NavLink>
               </li>
             </ul>
           </div>
 
-          {/* Demo Controls */}
-          <div>
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">Demo Management</h4>
-            <p className="text-xs text-slate-400 mb-3">
-              This application stores all issues and status changes in browser localStorage.
-            </p>
-            <button
-              onClick={resetToMockData}
-              className="w-full px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 border border-slate-700 transition"
-            >
-              <RefreshCw className="w-3.5 h-3.5 text-blue-400" />
-              <span>Reset Demo Complaints</span>
-            </button>
-            <div className="mt-4 p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] text-slate-400">
-              <span className="font-semibold text-slate-300">Tip for Presentation:</span> Use the role buttons at top header to simulate Citizen → Admin → Field Staff flow live!
+          {/* Column 3: Municipal Admin */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#1D1C1D]">
+              Municipal Admin
+            </h4>
+            <ul className="space-y-2 text-xs font-semibold text-[#616061]">
+              <li>
+                <NavLink to="/admin/login" className="hover:text-[#4A154B] transition-colors flex items-center gap-1 font-bold text-[#4A154B]">
+                  <Lock className="w-3 h-3" />
+                  <span>Admin Login Gateway</span>
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/admin/dashboard" className="hover:text-[#4A154B] transition-colors">
+                  Command Dashboard
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/admin/issues" className="hover:text-[#4A154B] transition-colors">
+                  All Issues Table & CSV
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/admin/map" className="hover:text-[#4A154B] transition-colors">
+                  Spatial Heatmap & GIS
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/admin/departments" className="hover:text-[#4A154B] transition-colors">
+                  Department Wings & Roster
+                </NavLink>
+              </li>
+              <li>
+                <NavLink to="/staff/dashboard" className="hover:text-[#4A154B] transition-colors flex items-center gap-1">
+                  <HardHat className="w-3 h-3 text-[#9E6A00]" />
+                  <span>Field Staff Terminal</span>
+                </NavLink>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: Emergency Helplines */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#1D1C1D]">
+              Civic Helplines
+            </h4>
+            <div className="space-y-2.5 text-xs text-[#616061] font-medium">
+              <div className="p-3 bg-[#F8F6F2] rounded-xl border border-[#EAE8E2] space-y-1">
+                <p className="font-bold text-[#1D1C1D] flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-[#007A5A]" />
+                  <span>1800-11-2026 (Toll Free)</span>
+                </p>
+                <p className="text-[11px] text-[#616061]">24x7 Municipal Control Desk</p>
+              </div>
+
+              <div className="p-3 bg-[#F8F6F2] rounded-xl border border-[#EAE8E2] space-y-1">
+                <p className="font-bold text-[#1D1C1D] flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-[#1264A3]" />
+                  <span>grievance@nagarsetu.gov.in</span>
+                </p>
+                <p className="text-[11px] text-[#616061]">Official Escalation Cell</p>
+              </div>
             </div>
           </div>
 
         </div>
 
-        <div className="mt-12 pt-6 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© 2026 NagarSetu. Smart India Hackathon (SIH) Project.</p>
-          <p className="flex items-center gap-1">
-            Built for Smarter, Cleaner and More Responsive Cities.
+        {/* Bottom Strip with Generous Spacing */}
+        <div className="pt-8 border-t border-[#EAE8E2] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[#616061]">
+          <p className="font-medium">
+            © 2026 NagarSetu (नगरसेतु) Platform. Built for the Smart India Hackathon.
           </p>
+
+          <div className="flex items-center gap-6 font-semibold">
+            <span className="hover:text-[#1D1C1D] cursor-pointer">Privacy Policy</span>
+            <span>•</span>
+            <span className="hover:text-[#1D1C1D] cursor-pointer">Terms of Service</span>
+            <span>•</span>
+            <span className="hover:text-[#1D1C1D] cursor-pointer">Citizen Charter</span>
+          </div>
         </div>
+
       </div>
+
     </footer>
   );
 };

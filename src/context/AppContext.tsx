@@ -47,6 +47,11 @@ interface AppContextType {
   notification: Notification | null;
   trackQuery: string;
   isBackendConnected: boolean;
+  isAdminAuthenticated: boolean;
+  
+  // Authentication
+  loginAdmin: (id: string, pass: string) => boolean;
+  logoutAdmin: () => void;
   
   // Navigation
   setActiveTab: (tab: string) => void;
@@ -100,6 +105,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'nagarsetu_issues_v2';
 const USER_KEY = 'nagarsetu_role_v2';
+const ADMIN_AUTH_KEY = 'nagarsetu_admin_auth_v2';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Load issues from localStorage or initial mock data
@@ -116,6 +122,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
+
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(ADMIN_AUTH_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   const [currentRole, setCurrentRole] = useState<UserRole>(() => {
     try {
@@ -147,12 +161,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } else {
         setIsBackendConnected(false);
       }
-    } catch (err) {
+    } catch {
       setIsBackendConnected(false);
     }
   }, []);
 
-  // Check backend health and sync on startup
+  // Check backend health on startup
   useEffect(() => {
     refreshFromBackend();
     const interval = setInterval(refreshFromBackend, 15000);
@@ -177,8 +191,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [currentRole]);
 
+  // Persist admin auth
+  useEffect(() => {
+    try {
+      localStorage.setItem(ADMIN_AUTH_KEY, isAdminAuthenticated ? 'true' : 'false');
+    } catch (e) {
+      console.error('Error saving admin auth', e);
+    }
+  }, [isAdminAuthenticated]);
+
   // Current user profile based on active role
   const currentUser: UserProfile = DEMO_USERS[currentRole] || DEMO_USERS.citizen;
+
+  const loginAdmin = (id: string, pass: string): boolean => {
+    const validId = id.toLowerCase() === 'admin@nagarsetu.gov.in' || id.toLowerCase() === 'admin';
+    const validPass = pass === 'admin123' || pass === 'muni2026';
+
+    if (validId && validPass) {
+      setIsAdminAuthenticated(true);
+      setCurrentRole('admin');
+      return true;
+    }
+    return false;
+  };
+
+  const logoutAdmin = () => {
+    setIsAdminAuthenticated(false);
+    setCurrentRole('public');
+    showNotification('Logged out from Municipal Admin Portal', 'info');
+  };
 
   const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Date.now().toString();
@@ -200,13 +241,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentRole(role);
     if (role === 'citizen') {
       navigateTo('citizen-dashboard');
-      showNotification('Switched to Citizen Profile (Aarav Sharma)', 'info');
+      showNotification('Active as Citizen (Aarav Sharma)', 'info');
     } else if (role === 'admin') {
+      setIsAdminAuthenticated(true);
       navigateTo('admin-dashboard');
-      showNotification('Switched to Municipal Administrator (Shreya Deshmukh, IAS)', 'info');
+      showNotification('Active as Municipal Admin (Shreya Deshmukh, IAS)', 'info');
     } else if (role === 'staff') {
       navigateTo('staff-dashboard');
-      showNotification('Switched to Field Staff Profile (Ramesh Kumar)', 'info');
+      showNotification('Active as Field Staff (Ramesh Kumar)', 'info');
     } else {
       navigateTo('landing');
     }
@@ -216,7 +258,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return issues.find((issue) => issue.id.toLowerCase() === id.toLowerCase());
   };
 
-  // 1. Create a new Issue (Optimistic local + Backend Node API sync)
+  // Create Issue
   const createIssue = (input: CreateIssueInput): Issue => {
     const nextNumber = issues.length + 125;
     const padded = String(nextNumber).padStart(5, '0');
@@ -245,8 +287,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         address: input.address,
         ward: input.ward || 'Ward 14 - Indiranagar',
         city: input.city || 'Bengaluru',
-        lat: input.lat || 12.9716 + (Math.random() - 0.5) * 0.05,
-        lng: input.lng || 77.5946 + (Math.random() - 0.5) * 0.05,
+        lat: input.lat || 12.9716,
+        lng: input.lng || 77.5946,
         landmark: input.landmark
       },
       imageUrl: input.imageUrl,
@@ -273,7 +315,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setIssues((prev) => [newIssue, ...prev]);
 
-    // Send to Node.js Backend API
     api.createIssue({
       title: input.title,
       description: input.description,
@@ -290,47 +331,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       citizenPhone: currentUser.phone,
       citizenEmail: currentUser.email,
       citizenId: currentUser.id
-    }).catch((err) => console.log('API sync notice (stored locally):', err));
+    }).catch(() => {});
 
-    showNotification(`Complaint ${newId} registered and synced with Node server!`, 'success');
+    showNotification(`Complaint ${newId} registered successfully!`, 'success');
     return newIssue;
   };
 
-  // 2. Update issue
+  // Update issue
   const updateIssue = (id: string, updates: Partial<Issue>) => {
     const now = new Date().toISOString();
     setIssues((prev) =>
       prev.map((item) => (item.id === id ? { ...item, ...updates, updatedAt: now } : item))
     );
-
-    api.updateIssue(id, updates).catch((err) => console.log('Backend sync notice:', err));
+    api.updateIssue(id, updates).catch(() => {});
   };
 
-  // 3. Upvote issue
+  // Upvote issue
   const upvoteIssue = (id: string) => {
     const userId = currentUser.id || 'anonymous-user';
     setIssues((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
-        const alreadyUpvoted = item.upvotedBy.includes(userId);
+        const alreadyUpvoted = item.upvotedBy?.includes(userId);
         if (alreadyUpvoted) {
-          showNotification('You have already upvoted this issue', 'info');
+          showNotification('You have already upvoted this grievance', 'info');
           return item;
         }
-        showNotification('Upvoted! Civic priority increased.', 'success');
+        showNotification('Upvoted! Municipal priority escalated.', 'success');
         return {
           ...item,
           upvotes: item.upvotes + 1,
-          upvotedBy: [...item.upvotedBy, userId],
+          upvotedBy: [...(item.upvotedBy || []), userId],
           updatedAt: new Date().toISOString()
         };
       })
     );
-
-    api.upvoteIssue(id, userId).catch((err) => console.log('Backend upvote sync notice:', err));
+    api.upvoteIssue(id, userId).catch(() => {});
   };
 
-  // 4. Assign issue to Department & Staff
+  // Assign issue
   const assignIssue = (id: string, department: DepartmentName, staffId?: string) => {
     const formattedDate = new Date().toLocaleString('en-IN', {
       day: '2-digit',
@@ -352,7 +391,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           label: `Assigned to ${department}`,
           date: formattedDate,
           actor: currentUser.name || 'Municipal Admin',
-          notes: staff ? `Assigned to Field Officer: ${staff.name} (${staff.role})` : undefined
+          notes: staff ? `Assigned to Field Lead: ${staff.name} (${staff.role})` : undefined
         };
 
         return {
@@ -366,11 +405,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
 
-    api.assignIssue(id, department, staffId, currentUser.name).catch((err) => console.log('Backend sync notice:', err));
-    showNotification(`Issue assigned to ${department} successfully`, 'success');
+    api.assignIssue(id, department, staffId, currentUser.name).catch(() => {});
+    showNotification(`Issue assigned to ${department}`, 'success');
   };
 
-  // 5. Update Status
+  // Update Status
   const updateIssueStatus = (
     id: string,
     status: IssueStatus,
@@ -423,11 +462,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
 
-    api.updateStatus(id, status, note, resolutionImageUrl, currentUser.name).catch((err) => console.log('Backend sync notice:', err));
-    showNotification(`Issue status updated to "${status}"`, 'success');
+    api.updateStatus(id, status, note, resolutionImageUrl, currentUser.name).catch(() => {});
+    showNotification(`Status updated to "${status}"`, 'success');
   };
 
-  // 6. Citizen Feedback
+  // Submit Feedback
   const submitFeedback = (id: string, rating: number, comment: string) => {
     const now = new Date().toISOString();
     setIssues((prev) =>
@@ -445,11 +484,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
 
-    api.submitFeedback(id, rating, comment).catch((err) => console.log('Backend sync notice:', err));
-    showNotification('Thank you! Your feedback has been recorded.', 'success');
+    api.submitFeedback(id, rating, comment).catch(() => {});
+    showNotification('Feedback recorded. Thank you!', 'success');
   };
 
-  // 7. Add internal note
+  // Add Note
   const addInternalNote = (id: string, text: string) => {
     const formattedDate = new Date().toLocaleString('en-IN', {
       day: '2-digit',
@@ -479,18 +518,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
 
-    api.addInternalNote(id, text, currentUser.name, currentUser.role === 'admin' ? 'Administrator' : 'Field Staff').catch((err) => console.log('Backend sync notice:', err));
-    showNotification('Internal note saved', 'success');
+    api.addInternalNote(id, text, currentUser.name, currentUser.role === 'admin' ? 'Administrator' : 'Field Staff').catch(() => {});
+    showNotification('Internal audit note saved', 'success');
   };
 
-  // 8. Delete Issue
+  // Delete Issue
   const deleteIssue = (id: string) => {
     setIssues((prev) => prev.filter((item) => item.id !== id));
-    api.deleteIssue(id).catch((err) => console.log('Backend sync notice:', err));
+    api.deleteIssue(id).catch(() => {});
     showNotification('Issue removed', 'info');
   };
 
-  // 9. Reset to mock
+  // Reset to mock
   const resetToMockData = () => {
     setIssues(INITIAL_ISSUES);
     try {
@@ -499,11 +538,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
       console.error(e);
     }
-    api.resetDatabase().catch((err) => console.log('Backend sync notice:', err));
-    showNotification('Database reset to default 15 civic complaints', 'info');
+    api.resetDatabase().catch(() => {});
+    showNotification('Database reset to default 15 demo complaints', 'info');
   };
 
-  // Dynamic Statistics
   const citizenIssues = issues.filter(
     (i) => i.citizenId === currentUser.id || i.citizenEmail === currentUser.email || i.citizenName === 'Aarav Sharma'
   );
@@ -538,6 +576,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         notification,
         trackQuery,
         isBackendConnected,
+        isAdminAuthenticated,
+        loginAdmin,
+        logoutAdmin,
         setActiveTab,
         setSelectedIssueId,
         navigateTo,

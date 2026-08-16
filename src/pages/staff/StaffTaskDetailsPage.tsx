@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { MOCK_RESOLUTION_PHOTOS } from '../../data/mockData';
 import { StatusBadge, PriorityBadge, CategoryBadge } from '../../components/common/StatusBadge';
@@ -18,9 +19,12 @@ import {
 } from 'lucide-react';
 
 export const StaffTaskDetailsPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { selectedIssueId, getIssueById, updateIssueStatus, addInternalNote, navigateTo, showNotification } = useApp();
 
-  const issue = getIssueById(selectedIssueId || 'NS-2026-00124');
+  const issue = getIssueById(id || selectedIssueId || 'NS-2026-00124');
+
 
   const [resolutionImg, setResolutionImg] = useState<string>(
     issue?.resolutionImageUrl || MOCK_RESOLUTION_PHOTOS[0].url

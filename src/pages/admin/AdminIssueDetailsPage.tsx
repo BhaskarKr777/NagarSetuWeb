@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { 
   IssueStatus, 
@@ -28,6 +29,8 @@ import {
 } from 'lucide-react';
 
 export const AdminIssueDetailsPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { 
     selectedIssueId, 
     getIssueById, 
@@ -39,7 +42,8 @@ export const AdminIssueDetailsPage: React.FC = () => {
     showNotification 
   } = useApp();
 
-  const issue = getIssueById(selectedIssueId || 'NS-2026-00124');
+  const issue = getIssueById(id || selectedIssueId || 'NS-2026-00124');
+
 
   // Form states
   const [currentStatus, setCurrentStatus] = useState<IssueStatus>(issue?.status || 'Reported');
